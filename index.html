@@ -279,7 +279,7 @@ function calcGrade(total){
 function gradeClass(grade){ return grade.toLowerCase().replace(/\s+/g,''); }
 function initials(name){ return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 
-const SUPABASE_URL = 'https://bxdjuyixhqgsleyuwvml.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://bxdjuyixhqgsleyuwvml.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_YZ2TegOjMOcXRFbw2Awbhw_cdpBG7w8';
 const SUPABASE_READY = !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
