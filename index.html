@@ -167,6 +167,34 @@
   .sparkline-wrap svg { width: 100%; height: 60px; display: block; }
   .empty { color: #94A3B8; font-size: 13px; text-align: center; padding: 24px 0; }
   .empty i { display: block; font-size: 26px; margin-bottom: 8px; }
+
+  #storeTable td.name, #storeTable th.name { text-align: left; }
+  #storeTable tr.store-worst td.name { color: #B91C1C; font-weight: 700; }
+  .clickable-name { cursor: pointer; }
+  .clickable-name:hover { text-decoration: underline; color: #CA8A04; }
+
+  .store-compare-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .store-chip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; color: #475569; font-weight: 500; }
+  .store-chip.active { background: #1E2A3B; color: #FFFFFF; border-color: #1E2A3B; }
+  .store-compare-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
+  .store-compare-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .store-compare-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal-box { background: #FFFFFF; border-radius: 16px; padding: 22px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #1E2A3B; }
+  .modal-sub { color: #64748B; font-size: 12.5px; margin-top: 2px; }
+  .modal-close { border: none; background: #F1F5F9; border-radius: 50%; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .modal-list-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F1F5F9; font-size: 12.5px; }
+  .modal-list-item:last-child { border-bottom: none; }
+
+  @media print {
+    .panel { break-inside: avoid; box-shadow: none; }
+    #adminPanel, .toolbar, .filter-bar, .hero-right, .upload-status { display: none !important; }
+    .table-scroll { height: auto !important; overflow: visible !important; }
+    body { background: #FFFFFF; }
+  }
 </style>
 </head>
 <body>
@@ -235,6 +263,21 @@
   </div>
 
   <div class="panel">
+    <h2><i class="ti ti-building-store"></i>Ringkasan per Store</h2>
+    <div class="sub" style="color:#64748B; font-size:12.5px; margin-bottom:12px;">Diurutkan dari rata-rata poin terendah — toko yang paling perlu dibantu tampil paling atas.</div>
+    <div style="overflow-x:auto;">
+      <table id="storeTable">
+        <thead>
+          <tr>
+            <th class="name">Store</th><th>ERO</th><th>Rata-rata</th><th>Perfect</th><th>Good</th><th>Need Improve</th><th>Bad</th><th>Poor</th>
+          </tr>
+        </thead>
+        <tbody id="storeTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
     <h2><i class="ti ti-table"></i>Semua Data (<span id="rowCount">0</span> orang)</h2>
     <div class="filter-bar">
       <div class="filter-field">
@@ -255,6 +298,11 @@
       <button onclick="resetFilters()"><i class="ti ti-filter-x"></i>Reset Filter</button>
       <div class="filter-count" id="filterCount"></div>
     </div>
+    <div class="toolbar" style="margin-top:0; margin-bottom:14px;">
+      <button onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i>Download Excel</button>
+      <button onclick="window.print()"><i class="ti ti-printer"></i>Cetak / Simpan PDF</button>
+    </div>
+    <div class="sub" style="color:#94A3B8; font-size:11.5px; margin-bottom:10px;">Klik nama di tabel atau papan peringkat untuk melihat grafik tren poin orang tersebut.</div>
     <div class="table-scroll">
       <table id="dataTable">
         <thead>
@@ -273,6 +321,27 @@
     <div id="historySummary"></div>
     <div id="historyTrend"></div>
     <div id="history"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-chart-line"></i>Perbandingan Antar Store dari Waktu ke Waktu</h2>
+    <div class="sub" style="color:#64748B; font-size:12.5px; margin-bottom:12px;">Berdasarkan data snapshot yang tersimpan di Riwayat Progres. Pilih maksimal 5 store untuk dibandingkan.</div>
+    <div id="storeCompareControls" class="store-compare-controls"></div>
+    <div id="storeCompareChart"></div>
+  </div>
+</div>
+
+<div id="personModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closePersonModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="personModalName">-</div>
+        <div class="modal-sub" id="personModalStore">-</div>
+      </div>
+      <button class="modal-close" onclick="closePersonModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="personModalChart"></div>
+    <div id="personModalList"></div>
   </div>
 </div>
 
@@ -505,7 +574,7 @@ function render(){
       const pct = Math.max(6, (r.total/maxPt)*100);
       return `<div class="leaderboard-row">
         <div class="lb-rank">${i+1}</div>
-        <div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"><span class="nm">${escapeHtml(r.name)}</span></div></div>
+        <div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"><span class="nm clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</span></div></div>
         <div>${rankDeltaHtml(r.prevRank, i+1)}</div>
         <div class="lb-pt">${r.total.toFixed(2)}</div>
       </div>`;
@@ -523,6 +592,33 @@ function render(){
         <div class="watch-pt">${r.total.toFixed(2)}</div>
       </div>`;
     }).join('');
+  }
+
+  const storeMap = {};
+  withTotals.forEach(r=>{
+    const s = r.store || '(Tanpa Store)';
+    if(!storeMap[s]) storeMap[s] = { count:0, sum:0, Perfect:0, Good:0, ['Need Improve']:0, Bad:0, Poor:0 };
+    storeMap[s].count++; storeMap[s].sum += r.total;
+    storeMap[s][calcGrade(r.total)]++;
+  });
+  const storeRows = Object.keys(storeMap).map(s=>({ store:s, count:storeMap[s].count, avg: storeMap[s].sum/storeMap[s].count, ...storeMap[s] }));
+  storeRows.sort((a,b)=>a.avg-b.avg);
+  const storeTbody = document.getElementById('storeTableBody');
+  if(storeTbody){
+    if(storeRows.length===0){ storeTbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="ti ti-building-store"></i>Belum ada data.</td></tr>'; }
+    else {
+      storeTbody.innerHTML = storeRows.map((s,i)=>`
+        <tr class="${i===0?'store-worst':''}">
+          <td class="name">${escapeHtml(s.store)}</td>
+          <td>${s.count}</td>
+          <td><b>${s.avg.toFixed(2)}</b></td>
+          <td>${s.Perfect}</td>
+          <td>${s.Good}</td>
+          <td>${s['Need Improve']}</td>
+          <td>${s.Bad}</td>
+          <td>${s.Poor}</td>
+        </tr>`).join('');
+    }
   }
 
   const tbody = document.getElementById('tableBody');
@@ -543,11 +639,14 @@ function render(){
         <td><span class="grade ${gc}">${grade}</span></td>
         <td>${delta}</td>
         <td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td>
-        <td><button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button></td>
+        <td>
+          <button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat tren"><i class="ti ti-chart-line"></i></button>
+          <button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button>
+        </td>
       </tr>`;
     }
     return `<tr>
-      <td class="name readonly-val">${escapeHtml(r.name)}</td>
+      <td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td>
       ${fields.map(f=>`<td class="readonly-val">${(parseFloat(r[f])||0).toFixed(2)}</td>`).join('')}
       <td><b>${r.total.toFixed(2)}</b></td>
       <td><span class="grade ${gc}">${grade}</span></td>
@@ -556,6 +655,7 @@ function render(){
       <td></td>
     </tr>`;
   }).join('');
+  renderStoreCompareControls();
 }
 
 function buildSparkline(values){
@@ -575,6 +675,135 @@ function buildSparkline(values){
     ${pts.map((p,i)=>`<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="${i===pts.length-1?4:2.5}" fill="${last}"/>`).join('')}
   </svg>`;
 }
+function exportExcel(){
+  const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
+  const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
+  const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
+  const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade));
+  if(filtered.length===0){ alert('Tidak ada data untuk diexport.'); return; }
+  const data = filtered.map(r=>({
+    Rank: r.rank, Nama: r.name, Device: r.device, Acc: r.acc, Operator: r.operator,
+    Boltech: r.boltech, ['AR Acc']: r.arAcc, ['AR Boltech']: r.arBoltech,
+    ['Total Point']: Math.round(r.total*100)/100, Grade: calcGrade(r.total), Store: r.store||''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Big Malang 2');
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `BigMalang2-Laporan-${dateStr}.xlsx`);
+}
+
+function buildLineChartSvg(labels, series, opts={}){
+  const w = 640, h = 220, padL = 34, padR = 12, padT = 14, padB = 34;
+  const allVals = series.flatMap(s=>s.values.filter(v=>v!==null && v!==undefined));
+  if(allVals.length===0) return '<div class="empty">Belum ada data untuk ditampilkan.</div>';
+  const min = Math.min(0, Math.min(...allVals));
+  const max = Math.max(...allVals) * 1.1 || 10;
+  const stepX = (w - padL - padR) / Math.max(1, labels.length - 1);
+  const xAt = i => padL + i*stepX;
+  const yAt = v => padT + (h - padT - padB) * (1 - (v - min) / ((max - min) || 1));
+
+  const gridLines = [0,0.25,0.5,0.75,1].map(t=>{
+    const y = padT + (h-padT-padB)*t;
+    const val = (max - (max-min)*t);
+    return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#EEF2F7" stroke-width="1"/><text x="4" y="${y+3}" font-size="9" fill="#94A3B8">${val.toFixed(1)}</text>`;
+  }).join('');
+
+  const xLabels = labels.map((l,i)=>{
+    if(labels.length>8 && i%Math.ceil(labels.length/8)!==0 && i!==labels.length-1) return '';
+    return `<text x="${xAt(i)}" y="${h-10}" font-size="9" fill="#94A3B8" text-anchor="middle">${escapeHtml(String(l).slice(0,8))}</text>`;
+  }).join('');
+
+  const paths = series.map(s=>{
+    let segments = [], current = [];
+    s.values.forEach((v,i)=>{
+      if(v===null || v===undefined){ if(current.length){ segments.push(current); current=[]; } return; }
+      current.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`);
+    });
+    if(current.length) segments.push(current);
+    const lines = segments.map(seg=>`<polyline points="${seg.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+    const dots = s.values.map((v,i)=> (v===null||v===undefined) ? '' : `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
+    return lines + dots;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${opts.height||220}px;">${gridLines}${paths}${xLabels}</svg>`;
+}
+
+let historyData = [];
+
+function openPersonModal(name){
+  if(!name) return;
+  const current = rows.find(r=>r.name===name);
+  document.getElementById('personModalName').textContent = name;
+  document.getElementById('personModalStore').textContent = current ? (current.store||'-') : '-';
+  const chrono = [...historyData].reverse();
+  const points = [];
+  chrono.forEach(h=>{
+    if(!h.rows_snapshot) return;
+    const match = h.rows_snapshot.find(r=>r.name===name);
+    if(match) points.push({label:h.label, total:match.total, grade:match.grade});
+  });
+  const chartEl = document.getElementById('personModalChart');
+  const listEl = document.getElementById('personModalList');
+  if(points.length===0){
+    chartEl.innerHTML = '<div class="empty"><i class="ti ti-chart-line"></i>Belum ada data histori untuk orang ini. Grafik akan muncul setelah beberapa kali "Simpan snapshot".</div>';
+    listEl.innerHTML = '';
+  } else {
+    chartEl.innerHTML = buildLineChartSvg(points.map(p=>p.label), [{name, color:'#CA8A04', values: points.map(p=>p.total)}]);
+    listEl.innerHTML = [...points].reverse().map(p=>`<div class="modal-list-item"><span>${escapeHtml(p.label)}</span><span><b>${p.total.toFixed(2)}</b> · ${p.grade}</span></div>`).join('');
+  }
+  document.getElementById('personModal').style.display = 'flex';
+}
+function closePersonModal(){ document.getElementById('personModal').style.display = 'none'; }
+
+const STORE_COMPARE_COLORS = ['#2563EB','#059669','#F59E0B','#DC2626','#7C3AED'];
+let selectedCompareStores = [];
+
+function renderStoreCompareControls(){
+  const controlsEl = document.getElementById('storeCompareControls');
+  if(!controlsEl) return;
+  const allStores = [...new Set(rows.map(r=>r.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  if(selectedCompareStores.length===0){
+    const countByStore = {};
+    rows.forEach(r=>{ if(r.store) countByStore[r.store]=(countByStore[r.store]||0)+1; });
+    selectedCompareStores = allStores.slice().sort((a,b)=>(countByStore[b]||0)-(countByStore[a]||0)).slice(0,3);
+  }
+  controlsEl.innerHTML = allStores.map(s=>{
+    const active = selectedCompareStores.includes(s);
+    return `<span class="store-chip ${active?'active':''}" data-store="${escapeAttr(s)}" onclick="toggleCompareStore(this.dataset.store)">${escapeHtml(s)}</span>`;
+  }).join('');
+  renderStoreCompareChart();
+}
+function toggleCompareStore(store){
+  const idx = selectedCompareStores.indexOf(store);
+  if(idx>-1){ selectedCompareStores.splice(idx,1); }
+  else {
+    if(selectedCompareStores.length>=5){ alert('Maksimal 5 store untuk dibandingkan sekaligus.'); return; }
+    selectedCompareStores.push(store);
+  }
+  renderStoreCompareControls();
+}
+function renderStoreCompareChart(){
+  const chartEl = document.getElementById('storeCompareChart');
+  if(!chartEl) return;
+  const snaps = [...historyData].reverse().filter(h=>h.rows_snapshot && h.rows_snapshot.length);
+  if(snaps.length < 2 || selectedCompareStores.length===0){
+    chartEl.innerHTML = '<div class="empty"><i class="ti ti-chart-line"></i>Perlu minimal 2 snapshot dengan detail data (dan minimal 1 store dipilih) untuk membandingkan tren.</div>';
+    return;
+  }
+  const series = selectedCompareStores.map((store,i)=>{
+    const values = snaps.map(h=>{
+      const matches = h.rows_snapshot.filter(r=>r.store===store);
+      if(!matches.length) return null;
+      return matches.reduce((s,r)=>s+r.total,0)/matches.length;
+    });
+    return { name: store, color: STORE_COMPARE_COLORS[i % STORE_COMPARE_COLORS.length], values };
+  });
+  const chartHtml = buildLineChartSvg(snaps.map(h=>h.label), series, {height:260});
+  const legendHtml = `<div class="store-compare-legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${escapeHtml(s.name)}</span>`).join('')}</div>`;
+  chartEl.innerHTML = chartHtml + legendHtml;
+}
+
 function gradeCountsChips(rowsSnap){
   if(!rowsSnap || !rowsSnap.length) return '';
   const order = ['Perfect','Good','Need Improve','Bad','Poor'];
@@ -655,14 +884,14 @@ function renderHistory(history){
 }
 
 async function loadHistory(){
-  if(!SUPABASE_READY){renderHistory([]);return;}
+  if(!SUPABASE_READY){historyData=[];renderHistory([]);renderStoreCompareControls();return;}
   let {data,error}=await sb.from('rank_history').select('label,date,avg,top,top_pt,bottom,bottom_pt,count,rows_snapshot').order('date',{ascending:false}).limit(100);
   if(error){
     const retry=await sb.from('rank_history').select('label,date,avg,top,top_pt,bottom,bottom_pt,count').order('date',{ascending:false}).limit(100);
-    if(retry.error){console.error(retry.error);renderHistory([]);return;}
-    renderHistory(retry.data||[]);return;
+    if(retry.error){console.error(retry.error);historyData=[];renderHistory([]);renderStoreCompareControls();return;}
+    historyData=retry.data||[];renderHistory(historyData);renderStoreCompareControls();return;
   }
-  renderHistory(data||[]);
+  historyData=data||[];renderHistory(historyData);renderStoreCompareControls();
 }
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
