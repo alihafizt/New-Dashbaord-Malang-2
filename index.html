@@ -228,9 +228,23 @@
   @media(max-width:800px){ .score-grid{grid-template-columns:1fr 1fr;} .insight-grid{grid-template-columns:1fr;} .mobile-leader{display:block;} .wrap{max-width:100%;} .panel{padding:16px;} .hero-left h1{font-size:24px;} .grade-stats{grid-template-columns:repeat(2,1fr);} .stats{grid-template-columns:1fr 1fr;} .table-scroll{height:62vh;} .history-scroll{height:62vh;} }
   @media(max-width:560px){ body{padding:14px 10px 40px;} .hero{align-items:flex-start;} .hero-right{width:100%; justify-content:space-between;} .grade-stats{grid-template-columns:1fr 1fr;} .score-grid{grid-template-columns:1fr;} .podium{gap:6px;} .podium-card{max-width:33%;} .podium-name{font-size:11px;} .podium-store{display:none;} .search-input{min-width:0;width:100%;} .date-tools{display:grid;grid-template-columns:1fr 1fr;} .date-tools button{justify-content:center;} .modal-kpis{grid-template-columns:1fr 1fr 1fr;} .break-row{grid-template-columns:78px 1fr 40px;} }
 
+  body.gated .wrap { display: none; }
+  #viewGate { display: none; }
+  body.gated #viewGate { display: flex; }
 </style>
 </head>
-<body>
+<body class="gated">
+<div id="viewGate" class="modal-overlay" style="z-index:200;">
+  <div class="modal-box" style="max-width:380px; text-align:center;">
+    <div style="font-size:32px; margin-bottom:8px;"><i class="ti ti-trophy" style="color:#CA8A04;"></i></div>
+    <div class="modal-title" style="justify-content:center;">Big Malang 2</div>
+    <div class="modal-sub" style="margin-bottom:18px;">Login dengan akun tim untuk membuka dashboard.</div>
+    <input type="email" id="viewGateEmail" placeholder="Email" style="width:100%; padding:10px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; margin-bottom:10px;" autocomplete="username">
+    <input type="password" id="viewGatePassword" placeholder="Password" style="width:100%; padding:10px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; margin-bottom:10px;" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitViewGate()">
+    <button class="primary" id="viewGateSubmit" style="width:100%; justify-content:center;" onclick="submitViewGate()">Masuk</button>
+    <div id="viewGateError" style="color:#DC2626; font-size:12.5px; margin-top:10px; display:none;"></div>
+  </div>
+</div>
 <div class="wrap">
   <div class="hero">
     <div class="hero-left">
@@ -533,19 +547,25 @@ const SUPABASE_READY = !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.in
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let isAdmin=false, currentUser=null, saveTimer=null;
 
+// Isi dengan email akun Supabase Auth yang berhak jadi ADMIN (boleh lebih dari satu, pisahkan koma).
+// Akun lain yang login dengan email di luar daftar ini otomatis jadi mode "lihat saja".
+const ADMIN_EMAILS = ['GANTI-DENGAN-EMAIL-ADMIN@domain.com'].map(e=>e.trim().toLowerCase());
+function isAdminFromUser(user){
+  return !!user && ADMIN_EMAILS.includes((user.email||'').toLowerCase());
+}
 function syncMessage(msg,ok=true){const el=document.getElementById('syncStatus');if(!el)return;el.textContent=msg||'';el.className='upload-status '+(ok?'ok':'err');}
 function updateAdminUI(){document.getElementById('adminPanel').style.display=isAdmin?'block':'none';document.getElementById('adminBtnLabel').textContent=isAdmin?'Logout':'Login Admin';const badge=document.getElementById('modeBadge');badge.textContent=isAdmin?'Mode admin':'Mode lihat saja';badge.className='mode-badge '+(isAdmin?'admin':'view');}
 async function loadAdminState(){
   if(!SUPABASE_READY){isAdmin=false;updateAdminUI();syncMessage('Supabase belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di index.html.',false);return;}
-  const {data:{session}}=await sb.auth.getSession();currentUser=session?.user||null;isAdmin=!!currentUser;updateAdminUI();
+  const {data:{session}}=await sb.auth.getSession();currentUser=session?.user||null;isAdmin=isAdminFromUser(currentUser);updateAdminUI();
   if(isAdmin)syncMessage('Login admin aktif: '+(currentUser.email||'akun admin'));
 }
 async function toggleAdmin(){
   if(!SUPABASE_READY){alert('Dashboard belum dikonfigurasi ke Supabase. Ikuti PETUNJUK-GITHUB-PAGES-SUPABASE.md.');return;}
-  if(isAdmin){if(!confirm('Keluar dari mode admin?'))return;await sb.auth.signOut();currentUser=null;isAdmin=false;updateAdminUI();render();syncMessage('Logout berhasil.');return;}
+  if(isAdmin){if(!confirm('Keluar dari mode admin? Anda perlu login ulang untuk membuka dashboard lagi.'))return;await sb.auth.signOut();location.reload();return;}
   const email=prompt('Email admin Supabase:');if(email===null)return;const password=prompt('Password admin:');if(password===null)return;
   const {data,error}=await sb.auth.signInWithPassword({email:email.trim(),password});if(error){alert('Login gagal: '+error.message);return;}
-  currentUser=data.user;isAdmin=true;updateAdminUI();render();syncMessage('Login admin berhasil.');
+  currentUser=data.user;isAdmin=isAdminFromUser(currentUser);updateAdminUI();render();syncMessage(isAdmin?'Login admin berhasil.':'Login berhasil (mode lihat saja — email ini tidak terdaftar sebagai admin).');
 }
 function normalizeRows(value){if(!Array.isArray(value))return[];return value.map(r=>({name:String(r.name??''),device:parseFloat(r.device)||0,acc:parseFloat(r.acc)||0,operator:parseFloat(r.operator)||0,boltech:parseFloat(r.boltech)||0,arAcc:parseFloat(r.arAcc)||0,arBoltech:parseFloat(r.arBoltech)||0,store:String(r.store??''),prevRank:(r.prevRank===null||r.prevRank===undefined)?null:parseInt(r.prevRank)}));}
 async function loadData(){
@@ -1026,7 +1046,7 @@ function renderStoreScore(storeRows){
 function renderMoversPanel(){
   const el=document.getElementById('moversPanel'); if(!el)return; const h=getFilteredHistory(); if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan.</div>';return;}
   const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2],cur=chrono[chrono.length-1]; if(!prev.rows_snapshot||!cur.rows_snapshot){el.innerHTML='<div class="empty">Snapshot detail per-orang belum tersedia.</div>';return;}
-  const pm={};prev.rows_snapshot.forEach(r=>pm[r.name]=r.rank); const moves=cur.rows_snapshot.map(r=>({name:r.name,delta:(pm[r.name]??r.rank)-r.rank})).filter(r=>r.delta!==0); const gains=moves.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,5),drops=moves.filter(x=>x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,5);
+  const pm={};prev.rows_snapshot.forEach(r=>pm[r.name]=r.rank); const moves=cur.rows_snapshot.map(r=>({name:r.name,delta:(pm[r.name]??r.rank)-r.rank})).filter(r=>r.delta!==0); const gains=moves.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,3),drops=moves.filter(x=>x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,3);
   const list=(arr,up)=>arr.length?`<div class="mover-list">${arr.map(x=>`<div class="mover-row"><span class="nm">${escapeHtml(x.name)}</span><span class="delta">${up?'▲ +':'▼ '}${up?x.delta:Math.abs(x.delta)} rank</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada perubahan.</div>';
   el.innerHTML=`<div class="insight-card gain"><h3>📈 Most Improved</h3>${list(gains,true)}</div><div class="insight-card drop"><h3>📉 Biggest Drop</h3>${list(drops,false)}</div>`;
 }
@@ -1104,17 +1124,42 @@ async function loadHistory(){
   if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
   const {data,error}=await sb.from('rank_history').select('*').order('date',{ascending:false}).limit(100);
   if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
-  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();
+  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();
 }
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
 
-(async function init(){
+function unlockView(){
+  document.body.classList.remove('gated');
+}
+async function submitViewGate(){
+  if(!SUPABASE_READY){ document.getElementById('viewGateError').textContent='Supabase belum dikonfigurasi.'; document.getElementById('viewGateError').style.display='block'; return; }
+  const email = document.getElementById('viewGateEmail').value.trim();
+  const password = document.getElementById('viewGatePassword').value;
+  const errEl = document.getElementById('viewGateError');
+  const btn = document.getElementById('viewGateSubmit');
+  if(!email || !password){ errEl.textContent='Email dan password wajib diisi.'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Memproses...';
+  const {data,error} = await sb.auth.signInWithPassword({email,password});
+  btn.disabled = false; btn.textContent = 'Masuk';
+  if(error){ errEl.textContent = 'Login gagal: '+error.message; errEl.style.display='block'; return; }
+  currentUser = data.user; isAdmin = isAdminFromUser(currentUser);
+  unlockView();
+  bootApp();
+}
+let appBooted = false;
+async function bootApp(){
+  if(appBooted) return; appBooted = true;
   await loadAdminState();
-  if(SUPABASE_READY){sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;isAdmin=!!currentUser;updateAdminUI();render();});}
+  if(SUPABASE_READY){sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;isAdmin=isAdminFromUser(currentUser);updateAdminUI();render();});}
   await loadData();await loadHistory();
   if(SUPABASE_READY)setInterval(async()=>{if(!document.hidden&&!isAdmin)await loadData();},30000);
+}
+(async function initGate(){
+  if(!SUPABASE_READY){ unlockView(); bootApp(); return; }
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){ currentUser = session.user; isAdmin = isAdminFromUser(currentUser); unlockView(); bootApp(); }
 })();
 </script>
 </body>
