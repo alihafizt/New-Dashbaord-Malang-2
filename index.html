@@ -881,4 +881,428 @@ function render(){
   }
 
   const lb = document.getElementById('leaderboard');
-  if(sorted.length===0){ lb.innerHTML = '<div class="empty"><i class="ti ti-list-details
+  if(sorted.length===0){ lb.innerHTML = '<div class="empty"><i class="ti ti-list-details"></i>Belum ada data.</div>'; }
+  else {
+    const maxPt = Math.max(...sorted.map(r=>r.total), 8);
+    lb.innerHTML = sorted.map((r,i)=>{
+      const gc = gradeClass(calcGrade(r.total));
+      const pct = Math.max(6, (r.total/maxPt)*100);
+      return `<div class="leaderboard-row">
+        <div class="lb-rank">${i+1}</div>
+        <div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"><span class="nm clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</span></div></div>
+        <div>${rankDeltaHtml(r.prevRank, i+1)}</div>
+        <div class="lb-pt">${r.total.toFixed(2)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const watch = document.getElementById('watchlist');
+  if(sorted.length===0){ watch.innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i>Belum ada data.</div>'; }
+  else {
+    const bottom3 = sorted.slice(-3).reverse();
+    watch.innerHTML = bottom3.map(r=>{
+      const g = calcGrade(r.total);
+      return `<div class="watch-row">
+        <div class="watch-left"><i class="ti ti-alert-triangle"></i><div><div class="watch-name">${escapeHtml(r.name)}</div><div class="watch-store">${escapeHtml(r.store||'')}</div><div class="watch-grade">${g}</div></div></div>
+        <div class="watch-pt">${r.total.toFixed(2)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const storeMap = {};
+  withTotals.forEach(r=>{
+    const s = r.store || '(Tanpa Store)';
+    if(!storeMap[s]) storeMap[s] = { count:0, sum:0, Perfect:0, Good:0, ['Need Improve']:0, Bad:0, Poor:0 };
+    storeMap[s].count++; storeMap[s].sum += r.total;
+    storeMap[s][calcGrade(r.total)]++;
+  });
+  const storeRows = Object.keys(storeMap).map(s=>({ store:s, count:storeMap[s].count, avg: storeMap[s].sum/storeMap[s].count, ...storeMap[s] }));
+  storeRows.sort((a,b)=>a.avg-b.avg);
+  const storeTbody = document.getElementById('storeTableBody');
+  if(storeTbody){
+    if(storeRows.length===0){ storeTbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="ti ti-building-store"></i>Belum ada data.</td></tr>'; }
+    else {
+      storeTbody.innerHTML = storeRows.map((s,i)=>`
+        <tr class="${i===0?'store-worst':''}">
+          <td class="name">${escapeHtml(s.store)}</td>
+          <td>${s.count}</td>
+          <td><b>${s.avg.toFixed(2)}</b></td>
+          <td>${s.Perfect}</td>
+          <td>${s.Good}</td>
+          <td>${s['Need Improve']}</td>
+          <td>${s.Bad}</td>
+          <td>${s.Poor}</td>
+        </tr>`).join('');
+    }
+  }
+
+  const tbody = document.getElementById('tableBody');
+  const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
+  populateStoreOptions(ranked);
+  const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade) && (!searchName || r.name.toLowerCase().includes(searchName))); 
+  const countEl = document.getElementById('filterCount');
+  if(countEl) countEl.textContent = (filterStore||filterGrade||searchName) ? `Menampilkan ${filtered.length} dari ${n} orang` : '';
+  tbody.innerHTML = filtered.map(r=>{
+    const grade = calcGrade(r.total);
+    const gc = gradeClass(grade);
+    const delta = rankDeltaHtml(r.prevRank, r.rank);
+    if(isAdmin){
+      return `<tr>
+        <td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td>
+        ${fields.map(f=>`<td><input type="number" step="0.1" value="${r[f]}" onchange="updateField(${r.idx},'${f}',this.value)"></td>`).join('')}
+        <td><b>${r.total.toFixed(2)}</b></td>
+        <td><span class="grade ${gc}">${grade}</span></td>
+        <td>${delta}</td>
+        <td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td>
+        <td>
+          <button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat tren"><i class="ti ti-chart-line"></i></button>
+          <button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button>
+        </td>
+      </tr>`;
+    }
+    return `<tr>
+      <td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td>
+      ${fields.map(f=>`<td class="readonly-val">${(parseFloat(r[f])||0).toFixed(2)}</td>`).join('')}
+      <td><b>${r.total.toFixed(2)}</b></td>
+      <td><span class="grade ${gc}">${grade}</span></td>
+      <td>${delta}</td>
+      <td class="readonly-val">${escapeHtml(r.store||'')}</td>
+      <td></td>
+    </tr>`;
+  }).join('');
+  renderStoreCompareControls();
+  renderYesterdayToday();
+  renderStoreScore(storeRows);
+  renderMoversPanel();
+  renderAlerts(withTotals, sorted);
+  renderMobileLeader(withTotals);
+}
+
+function buildSparkline(values){
+  if(values.length < 2) return '';
+  const w = 600, h = 60, pad = 6;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const stepX = (w - pad*2) / (values.length - 1);
+  const pts = values.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - ((v-min)/range)*(h-pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = values[values.length-1] >= values[0] ? '#059669' : '#DC2626';
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${last}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="${i===pts.length-1?4:2.5}" fill="${last}"/>`).join('')}
+  </svg>`;
+}
+function exportExcel(){
+  const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
+  const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
+  const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
+  const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade) && (!searchName || r.name.toLowerCase().includes(searchName))); 
+  if(filtered.length===0){ alert('Tidak ada data untuk diexport.'); return; }
+  const data = filtered.map(r=>({
+    Rank: r.rank, Nama: r.name, Device: r.device, Acc: r.acc, Operator: r.operator,
+    Boltech: r.boltech, ['AR Acc']: r.arAcc, ['AR Boltech']: r.arBoltech,
+    ['Total Point']: Math.round(r.total*100)/100, Grade: calcGrade(r.total), Store: r.store||''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Big Malang 2');
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `BigMalang2-Laporan-${dateStr}.xlsx`);
+}
+
+function buildLineChartSvg(labels, series, opts={}){
+  const w = 640, h = 220, padL = 34, padR = 12, padT = 14, padB = 34;
+  const allVals = series.flatMap(s=>s.values.filter(v=>v!==null && v!==undefined));
+  if(allVals.length===0) return '<div class="empty">Belum ada data untuk ditampilkan.</div>';
+  const min = Math.min(0, Math.min(...allVals));
+  const max = Math.max(...allVals) * 1.1 || 10;
+  const stepX = (w - padL - padR) / Math.max(1, labels.length - 1);
+  const xAt = i => padL + i*stepX;
+  const yAt = v => padT + (h - padT - padB) * (1 - (v - min) / ((max - min) || 1));
+
+  const gridLines = [0,0.25,0.5,0.75,1].map(t=>{
+    const y = padT + (h-padT-padB)*t;
+    const val = (max - (max-min)*t);
+    return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#EEF2F7" stroke-width="1"/><text x="4" y="${y+3}" font-size="9" fill="#94A3B8">${val.toFixed(1)}</text>`;
+  }).join('');
+
+  const xLabels = labels.map((l,i)=>{
+    if(labels.length>8 && i%Math.ceil(labels.length/8)!==0 && i!==labels.length-1) return '';
+    return `<text x="${xAt(i)}" y="${h-10}" font-size="9" fill="#94A3B8" text-anchor="middle">${escapeHtml(String(l).slice(0,8))}</text>`;
+  }).join('');
+
+  const paths = series.map(s=>{
+    let segments = [], current = [];
+    s.values.forEach((v,i)=>{
+      if(v===null || v===undefined){ if(current.length){ segments.push(current); current=[]; } return; }
+      current.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`);
+    });
+    if(current.length) segments.push(current);
+    const lines = segments.map(seg=>`<polyline points="${seg.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+    const dots = s.values.map((v,i)=> (v===null||v===undefined) ? '' : `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
+    return lines + dots;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${opts.height||220}px;">${gridLines}${paths}${xLabels}</svg>`;
+}
+
+let historyData = [];
+
+function getFocusRecommendation(r){
+  const labels={device:'Device',acc:'Acc',operator:'Operator',boltech:'Boltech',arAcc:'AR Acc',arBoltech:'AR Boltech'};
+  const weights={device:3,acc:3,operator:1,boltech:1,arAcc:1,arBoltech:1};
+  const weak=fields.map(f=>({field:f,value:parseFloat(r[f])||0,max:weights[f]})).sort((a,b)=>(a.value/a.max)-(b.value/b.max));
+  const w=weak[0];
+  if((w.value/w.max)>=0.8) return 'Pertahankan performa. Fokus berikutnya adalah menjaga konsistensi semua indikator.';
+  return `Fokus utama: ${labels[w.field]}. Pencapaian ${w.value.toFixed(1)} dari ${w.max}. Prioritaskan coaching dan pendampingan pada indikator ini.`;
+}
+function openPersonModal(name){
+  if(!name) return;
+  const current = rows.find(r=>r.name===name);
+  document.getElementById('personModalName').textContent = name;
+  document.getElementById('personModalStore').textContent = current ? (current.store||'-') : '-';
+  const chrono = [...historyData].reverse();
+  const points = [];
+  chrono.forEach(h=>{
+    if(!h.rows_snapshot) return;
+    const match = h.rows_snapshot.find(r=>r.name===name);
+    if(match) points.push({label:h.label,total:match.total,grade:match.grade});
+  });
+  const chartEl=document.getElementById('personModalChart'), listEl=document.getElementById('personModalList');
+  if(current){
+    const labels={device:'Device',acc:'Acc',operator:'Operator',boltech:'Boltech',arAcc:'AR Acc',arBoltech:'AR Boltech'};
+    const maxes={device:3,acc:3,operator:1,boltech:1,arAcc:1,arBoltech:1};
+    const total=calcTotal(current), grade=calcGrade(total), focus=getFocusRecommendation(current);
+    const rank=[...rows].sort((a,b)=>calcTotal(b)-calcTotal(a)).findIndex(r=>r.name===name)+1;
+    const breakdown=`<div class="modal-breakdown">${fields.map(f=>`<div class="break-row"><span>${labels[f]}</span><div class="break-track"><div class="break-fill" style="width:${Math.min(100,((parseFloat(current[f])||0)/maxes[f])*100)}%"></div></div><b>${(parseFloat(current[f])||0).toFixed(1)}/${maxes[f]}</b></div>`).join('')}</div>`;
+    const kpis=`<div class="modal-kpis"><div class="modal-kpi"><b>${total.toFixed(2)}</b><span>Total</span></div><div class="modal-kpi"><b>#${rank}</b><span>Ranking</span></div><div class="modal-kpi"><b>${grade}</b><span>Grade</span></div></div>`;
+    const focusBox=`<div class="focus-box"><b>Rekomendasi fokus utama</b><div>${escapeHtml(focus)}</div></div>`;
+    chartEl.innerHTML=kpis+breakdown+focusBox+(points.length>=2?buildLineChartSvg(points.map(p=>p.label),[{name, color:'#CA8A04', values:points.map(p=>p.total)}],{height:200}):'');
+  } else chartEl.innerHTML='';
+  if(points.length===0) listEl.innerHTML='<div class="empty"><i class="ti ti-chart-line"></i>Belum ada data histori untuk orang ini.</div>';
+  else listEl.innerHTML=[...points].reverse().map(p=>`<div class="modal-list-item"><span>${escapeHtml(p.label)}</span><span><b>${p.total.toFixed(2)}</b> · ${p.grade}</span></div>`).join('');
+  document.getElementById('personModal').style.display='flex';
+}
+function closePersonModal(){ document.getElementById('personModal').style.display = 'none'; }
+
+const STORE_COMPARE_COLORS = ['#2563EB','#059669','#F59E0B','#DC2626','#7C3AED'];
+let selectedCompareStores = [];
+
+function renderStoreCompareControls(){
+  const controlsEl = document.getElementById('storeCompareControls');
+  if(!controlsEl) return;
+  const allStores = [...new Set(rows.map(r=>r.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  if(selectedCompareStores.length===0){
+    const countByStore = {};
+    rows.forEach(r=>{ if(r.store) countByStore[r.store]=(countByStore[r.store]||0)+1; });
+    selectedCompareStores = allStores.slice().sort((a,b)=>(countByStore[b]||0)-(countByStore[a]||0)).slice(0,3);
+  }
+  controlsEl.innerHTML = allStores.map(s=>{
+    const active = selectedCompareStores.includes(s);
+    return `<span class="store-chip ${active?'active':''}" data-store="${escapeAttr(s)}" onclick="toggleCompareStore(this.dataset.store)">${escapeHtml(s)}</span>`;
+  }).join('');
+  renderStoreCompareChart();
+}
+function toggleCompareStore(store){
+  const idx = selectedCompareStores.indexOf(store);
+  if(idx>-1){ selectedCompareStores.splice(idx,1); }
+  else {
+    if(selectedCompareStores.length>=5){ alert('Maksimal 5 store untuk dibandingkan sekaligus.'); return; }
+    selectedCompareStores.push(store);
+  }
+  renderStoreCompareControls();
+}
+function renderStoreCompareChart(){
+  const chartEl = document.getElementById('storeCompareChart');
+  if(!chartEl) return;
+  const snaps = [...getFilteredHistory()].reverse().filter(h=>h.rows_snapshot && h.rows_snapshot.length);
+  if(snaps.length < 2 || selectedCompareStores.length===0){
+    chartEl.innerHTML = '<div class="empty"><i class="ti ti-chart-line"></i>Perlu minimal 2 snapshot dengan detail data (dan minimal 1 store dipilih) untuk membandingkan tren.</div>';
+    return;
+  }
+  const series = selectedCompareStores.map((store,i)=>{
+    const values = snaps.map(h=>{
+      const matches = h.rows_snapshot.filter(r=>r.store===store);
+      if(!matches.length) return null;
+      return matches.reduce((s,r)=>s+r.total,0)/matches.length;
+    });
+    return { name: store, color: STORE_COMPARE_COLORS[i % STORE_COMPARE_COLORS.length], values };
+  });
+  const chartHtml = buildLineChartSvg(snaps.map(h=>h.label), series, {height:260});
+  const legendHtml = `<div class="store-compare-legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${escapeHtml(s.name)}</span>`).join('')}</div>`;
+  chartEl.innerHTML = chartHtml + legendHtml;
+}
+
+function gradeCountsChips(rowsSnap){
+  if(!rowsSnap || !rowsSnap.length) return '';
+  const order = ['Perfect','Good','Need Improve','Bad','Poor'];
+  const colors = {Perfect:'#059669',Good:'#84CC16',['Need Improve']:'#F59E0B',Bad:'#F97316',Poor:'#DC2626'};
+  const textColors = {Perfect:'#FFFFFF',Good:'#1A2E05',['Need Improve']:'#3B2504',Bad:'#FFFFFF',Poor:'#FFFFFF'};
+  const counts = {}; order.forEach(g=>counts[g]=0);
+  rowsSnap.forEach(r=>{ if(counts[r.grade]!==undefined) counts[r.grade]++; });
+  return `<div class="snap-grade-row">` + order.map(g=>`<span class="snap-grade-chip" style="background:${colors[g]};color:${textColors[g]}">${g}: ${counts[g]}</span>`).join('') + `</div>`;
+}
+function moversHtml(currentSnap, prevSnap){
+  if(!currentSnap || !prevSnap || !currentSnap.length || !prevSnap.length){
+    return '<div class="snap-nodetail">Data pembanding belum tersedia untuk snapshot sebelumnya.</div>';
+  }
+  const prevRankMap = {}; prevSnap.forEach(r=>{ prevRankMap[r.name] = r.rank; });
+  let gainer=null, dropper=null;
+  currentSnap.forEach(r=>{
+    if(!Object.prototype.hasOwnProperty.call(prevRankMap, r.name)) return;
+    const delta = prevRankMap[r.name] - r.rank;
+    if(delta > 0 && (!gainer || delta > gainer.delta)) gainer = {name:r.name, delta};
+    if(delta < 0 && (!dropper || delta < dropper.delta)) dropper = {name:r.name, delta};
+  });
+  return `<div class="snap-movers">
+    <div class="snap-mover-card gain"><div class="mv-lbl">Top Gainer</div><div class="mv-name">${gainer?escapeHtml(gainer.name):'–'}</div><div class="mv-delta">${gainer?('▲ naik '+gainer.delta+' peringkat'):'Tidak ada perubahan naik'}</div></div>
+    <div class="snap-mover-card drop"><div class="mv-lbl">Top Dropper</div><div class="mv-name">${dropper?escapeHtml(dropper.name):'–'}</div><div class="mv-delta">${dropper?('▼ turun '+Math.abs(dropper.delta)+' peringkat'):'Tidak ada perubahan turun'}</div></div>
+  </div>`;
+}
+
+function getFilteredHistory(){
+  let h=[...historyData];
+  if(dateFrom){const d=new Date(dateFrom+'T00:00:00'); h=h.filter(x=>new Date(x.date)>=d);}
+  if(dateTo){const d=new Date(dateTo+'T23:59:59'); h=h.filter(x=>new Date(x.date)<=d);}
+  return h;
+}
+function applyDateFilter(){ dateFrom=document.getElementById('dateFrom')?.value||''; dateTo=document.getElementById('dateTo')?.value||''; filteredHistoryData=getFilteredHistory(); renderHistory(filteredHistoryData); renderStoreCompareChart(); renderYesterdayToday(); renderMoversPanel(); }
+function setDateRange(days){const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1); document.getElementById('dateFrom').value=start.toISOString().slice(0,10); document.getElementById('dateTo').value=end.toISOString().slice(0,10); applyDateFilter();}
+function clearDateFilter(){dateFrom='';dateTo='';document.getElementById('dateFrom').value='';document.getElementById('dateTo').value='';applyDateFilter();}
+function renderYesterdayToday(){
+  const el=document.getElementById('yesterdayToday'); if(!el)return;
+  const h=getFilteredHistory();
+  if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan untuk perbandingan.</div>';return;}
+  const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2], cur=chrono[chrono.length-1]; const d=cur.avg-prev.avg; const pct=prev.avg?d/prev.avg*100:0;
+  const curMap={};(cur.rows_snapshot||[]).forEach(r=>curMap[r.name]=r); const prevMap={};(prev.rows_snapshot||[]).forEach(r=>prevMap[r.name]=r);
+  let improved=0,declined=0;Object.keys(curMap).forEach(n=>{if(prevMap[n]){if(curMap[n].rank<prevMap[n].rank)improved++;else if(curMap[n].rank>prevMap[n].rank)declined++;}});
+  el.innerHTML=`<div class="insight-card"><h3>${escapeHtml(prev.label)}</h3><div class="big">${prev.avg.toFixed(2)}</div><div class="muted">Snapshot sebelumnya</div></div><div class="insight-card ${d>=0?'gain':'drop'}"><h3>${escapeHtml(cur.label)}</h3><div class="big">${cur.avg.toFixed(2)} ${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(2)}</div><div class="muted">${d>=0?'+':''}${pct.toFixed(1)}% · ${improved} ERO naik rank · ${declined} turun rank</div></div>`;
+}
+function renderStoreScore(storeRows){
+  const el=document.getElementById('storeScoreGrid'); if(!el)return; if(!storeRows.length){el.innerHTML='<div class="empty">Belum ada data store.</div>';return;}
+  el.innerHTML=storeRows.map(s=>{const score=Math.max(0,Math.min(100,s.avg*10)); const goodPlus=(s.Perfect+s.Good)/s.count*100; return `<div class="score-card"><div class="score-head"><div class="score-name">${escapeHtml(s.store)}</div><div class="score-value">${score.toFixed(0)}</div></div><div class="score-bar"><span style="width:${score}%"></span></div><div class="score-meta"><span>Avg ${s.avg.toFixed(2)}</span><span>Good+ ${goodPlus.toFixed(0)}%</span></div></div>`;}).join('');
+}
+function renderMoversPanel(){
+  const el=document.getElementById('moversPanel'); if(!el)return; const h=getFilteredHistory(); if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan.</div>';return;}
+  const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2],cur=chrono[chrono.length-1]; if(!prev.rows_snapshot||!cur.rows_snapshot){el.innerHTML='<div class="empty">Snapshot detail per-orang belum tersedia.</div>';return;}
+  const pm={};prev.rows_snapshot.forEach(r=>pm[r.name]=r.rank); const moves=cur.rows_snapshot.map(r=>({name:r.name,delta:(pm[r.name]??r.rank)-r.rank})).filter(r=>r.delta!==0); const gains=moves.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,3),drops=moves.filter(x=>x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,3);
+  const list=(arr,up)=>arr.length?`<div class="mover-list">${arr.map(x=>`<div class="mover-row"><span class="nm">${escapeHtml(x.name)}</span><span class="delta">${up?'▲ +':'▼ '}${up?x.delta:Math.abs(x.delta)} rank</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada perubahan.</div>';
+  el.innerHTML=`<div class="insight-card gain"><h3>📈 Most Improved</h3>${list(gains,true)}</div><div class="insight-card drop"><h3>📉 Biggest Drop</h3>${list(drops,false)}</div>`;
+}
+function renderAlerts(withTotals,sorted){
+  const el=document.getElementById('alertPanel');if(!el)return; const alerts=[]; const poor=withTotals.filter(r=>calcGrade(r.total)==='Poor'), bad=withTotals.filter(r=>calcGrade(r.total)==='Bad');
+  if(poor.length) alerts.push({c:'critical',icon:'ti-alert-triangle',t:`${poor.length} ERO berada di kategori Poor`,d:'Prioritaskan coaching dan pendampingan pada ERO dengan skor terendah.'});
+  if(bad.length) alerts.push({c:'warning',icon:'ti-alert-circle',t:`${bad.length} ERO berada di kategori Bad`,d:'Review indikator terendah dan buat action plan.'});
+  const h=getFilteredHistory(); if(h.length>=2){const ch=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const d=ch.at(-1).avg-ch.at(-2).avg;if(d<0)alerts.push({c:'critical',icon:'ti-trending-down',t:`Rata-rata turun ${Math.abs(d).toFixed(2)} poin`,d:'Bandingkan store dan ERO yang mengalami penurunan terbesar.'});else if(d>0)alerts.push({c:'good',icon:'ti-trending-up',t:`Rata-rata naik ${d.toFixed(2)} poin`,d:'Pertahankan praktik yang membuat performa meningkat.'});}
+  if(!alerts.length)alerts.push({c:'good',icon:'ti-circle-check',t:'Tidak ada alert kritis',d:'Performance saat ini tidak memunculkan kondisi yang perlu perhatian khusus.'});
+  el.innerHTML=alerts.map(a=>`<div class="alert-item ${a.c}"><i class="ti ${a.icon}"></i><div><strong>${a.t}</strong><div>${a.d}</div></div></div>`).join('');
+  const m=document.getElementById('mAlerts');if(m)m.textContent=alerts.filter(a=>a.c==='critical'||a.c==='warning').length;
+}
+function renderMobileLeader(withTotals){const m=document.getElementById('mCount');if(!m)return;document.getElementById('mCount').textContent=withTotals.length;document.getElementById('mAvg').textContent=withTotals.length?(withTotals.reduce((s,r)=>s+r.total,0)/withTotals.length).toFixed(2):'0';const h=getFilteredHistory();let imp=0;if(h.length>=2&&h.at(-1).rows_snapshot&&h.at(-2).rows_snapshot){const pm={};h.at(-2).rows_snapshot.forEach(r=>pm[r.name]=r.rank);h.at(-1).rows_snapshot.forEach(r=>{if(pm[r.name]&&r.rank<pm[r.name])imp++;});}document.getElementById('mImproved').textContent=imp;const focus=withTotals.filter(r=>calcGrade(r.total)==='Poor'||calcGrade(r.total)==='Bad').sort((a,b)=>a.total-b.total).slice(0,2);document.getElementById('mFocus').textContent=focus.length?focus.map(r=>`${r.name} (${r.total.toFixed(2)})`).join(' · '):'Tidak ada ERO kritis saat ini.';}
+function renderHistory(history){
+  filteredHistoryData = history || [];
+  const el = document.getElementById('history');
+  const summaryEl = document.getElementById('historySummary');
+  const trendEl = document.getElementById('historyTrend');
+  if(!history || history.length===0){
+    el.innerHTML = '<div class="empty"><i class="ti ti-timeline"></i>Belum ada snapshot. Klik "Simpan snapshot hari ini" untuk mulai melacak progres.</div>';
+    summaryEl.innerHTML = ''; trendEl.innerHTML = '';
+    return;
+  }
+  const chrono = [...history].reverse();
+
+  const firstAvg = chrono[0].avg, lastAvg = chrono[chrono.length-1].avg;
+  const overallDelta = Math.round((lastAvg-firstAvg)*100)/100;
+  summaryEl.innerHTML = `<div class="history-summary">
+    <div><b>${chrono.length}</b> snapshot tercatat</div>
+    <div>Rata-rata pertama: <b>${firstAvg.toFixed(2)}</b></div>
+    <div>Rata-rata terakhir: <b>${lastAvg.toFixed(2)}</b></div>
+    <div>Perubahan keseluruhan: <b style="color:${overallDelta>=0?'#15803D':'#B91C1C'}">${overallDelta>=0?'+':''}${overallDelta.toFixed(2)}</b></div>
+  </div>`;
+
+  trendEl.innerHTML = chrono.length >= 2 ? `<div class="sparkline-wrap">${buildSparkline(chrono.map(h=>h.avg))}</div>` : '';
+
+  el.innerHTML = chrono.map((h,idx)=>{
+    const prev = idx>0 ? chrono[idx-1] : null;
+    let trendHtml = '';
+    if(prev){
+      const d = Math.round((h.avg - prev.avg)*100)/100;
+      const cls = d>0?'up':d<0?'down':'same';
+      trendHtml = `<span class="snap-trend ${cls}">${d>0?'▲':d<0?'▼':'–'} ${Math.abs(d).toFixed(2)}</span>`;
+    }
+    const hasDetail = h.rows_snapshot && h.rows_snapshot.length;
+    const detailBody = hasDetail
+      ? gradeCountsChips(h.rows_snapshot) + moversHtml(h.rows_snapshot, prev?.rows_snapshot)
+      : '<div class="snap-nodetail">Snapshot ini belum menyimpan detail per-orang.</div>';
+    const metaRows = [];
+    if(h.file_name) metaRows.push(`<div class="modal-list-item"><span>File</span><span>${escapeHtml(h.file_name)}</span></div>`);
+    if(h.uploaded_by) metaRows.push(`<div class="modal-list-item"><span>Diupload oleh</span><span>${escapeHtml(h.uploaded_by)}</span></div>`);
+    if(h.best_store) metaRows.push(`<div class="modal-list-item"><span>Store terbaik</span><span>${escapeHtml(h.best_store)}${h.best_store_avg!=null?' ('+Number(h.best_store_avg).toFixed(2)+')':''}</span></div>`);
+    if(h.worst_store) metaRows.push(`<div class="modal-list-item"><span>Store terendah</span><span>${escapeHtml(h.worst_store)}${h.worst_store_avg!=null?' ('+Number(h.worst_store_avg).toFixed(2)+')':''}</span></div>`);
+    const metaBlock = metaRows.length ? `<div class="snap-meta">${metaRows.join('')}</div>` : '';
+    return `<div class="snap-item">
+      <div class="snap-top">
+        <div>
+          <div class="snap-label">${escapeHtml(h.label)}</div>
+          <div class="snap-detail"><i class="ti ti-medal" style="color:#CA8A04; vertical-align:-2px;"></i> ${escapeHtml(h.top)} (${h.top_pt.toFixed(2)}) &nbsp;&middot;&nbsp; <i class="ti ti-alert-triangle" style="color:#DC2626; vertical-align:-2px;"></i> ${escapeHtml(h.bottom)} (${h.bottom_pt.toFixed(2)})</div>
+        </div>
+        <div class="snap-avg-wrap">
+          ${trendHtml}
+          <div class="snap-avg">${h.avg.toFixed(2)}</div>
+        </div>
+      </div>
+      <details>
+        <summary class="snap-toggle">Lihat detail (${h.count} orang)</summary>
+        <div class="snap-body">${metaBlock}${detailBody}</div>
+      </details>
+    </div>`;
+  }).join('');
+}
+
+async function loadHistory(){
+  if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
+  const {data,error}=await sb.from('rank_history').select('*').order('date',{ascending:false}).limit(100);
+  if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
+  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+function unlockView(){
+  document.body.classList.remove('gated');
+}
+async function submitViewGate(){
+  if(!SUPABASE_READY){ document.getElementById('viewGateError').textContent='Supabase belum dikonfigurasi.'; document.getElementById('viewGateError').style.display='block'; return; }
+  const email = document.getElementById('viewGateEmail').value.trim();
+  const password = document.getElementById('viewGatePassword').value;
+  const errEl = document.getElementById('viewGateError');
+  const btn = document.getElementById('viewGateSubmit');
+  if(!email || !password){ errEl.textContent='Email dan password wajib diisi.'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Memproses...';
+  const {data,error} = await sb.auth.signInWithPassword({email,password});
+  btn.disabled = false; btn.textContent = 'Masuk';
+  if(error){ errEl.textContent = 'Login gagal: '+error.message; errEl.style.display='block'; return; }
+  currentUser = data.user; isAdmin = isAdminFromUser(currentUser);
+  unlockView();
+  bootApp();
+}
+let appBooted = false;
+async function bootApp(){
+  if(appBooted) return; appBooted = true;
+  await loadAdminState();
+  if(SUPABASE_READY){sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;isAdmin=isAdminFromUser(currentUser);updateAdminUI();render();});}
+  await loadData();await loadHistory();
+  if(SUPABASE_READY)setInterval(async()=>{if(!document.hidden&&!isAdmin)await loadData();},30000);
+}
+(async function initGate(){
+  if(!SUPABASE_READY){ unlockView(); bootApp(); return; }
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){ currentUser = session.user; isAdmin = isAdminFromUser(currentUser); unlockView(); bootApp(); }
+})();
+</script>
+</body>
+</html>
