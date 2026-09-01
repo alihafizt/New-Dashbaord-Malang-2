@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Big Malang 2 — Point Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F3F6FC;
+    background-image: radial-gradient(circle at 15% 0%, #EAF1FF 0%, #F3F6FC 45%);
+    color: #1E2A3B;
+    padding: 28px 16px 64px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  .hero { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 22px; }
+  .hero-left h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; color: #17233A; }
+  .hero-left h1 i { color: #CA8A04; font-size: 26px; }
+  .hero-left .sub { color: #64748B; font-size: 14px; margin-top: 6px; }
+  .hero-right { display: flex; align-items: center; gap: 10px; }
+  .mode-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .mode-badge.view { background: #E7ECF5; color: #64748B; }
+  .mode-badge.admin { background: #F5B400; color: #3B2504; }
+  .readonly-val { font-size: 12.5px; color: #334155; }
+
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+  .grade-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(30,41,59,0.04); }
+  .stat-card .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: #64748B; display: flex; align-items: center; gap: 6px; }
+  .stat-card .val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; margin-top: 6px; color: #1E2A3B; }
+  .stat-card .upd { font-size: 11px; color: #94A3B8; margin-top: 4px; }
+  .stat-card .pct { font-size: 11.5px; font-weight: 700; margin-top: 3px; }
+  .stat-card.perfect { border-top: 3px solid #059669; } .stat-card.perfect .val { color: #059669; } .stat-card.perfect .pct { color: #059669; }
+  .stat-card.good { border-top: 3px solid #84CC16; } .stat-card.good .val { color: #65A30D; } .stat-card.good .pct { color: #65A30D; }
+  .stat-card.needimprove { border-top: 3px solid #F59E0B; } .stat-card.needimprove .val { color: #D97706; } .stat-card.needimprove .pct { color: #D97706; }
+  .stat-card.bad { border-top: 3px solid #F97316; } .stat-card.bad .val { color: #EA580C; } .stat-card.bad .pct { color: #EA580C; }
+  .stat-card.poor { border-top: 3px solid #DC2626; } .stat-card.poor .val { color: #DC2626; } .stat-card.poor .pct { color: #DC2626; }
+
+  .panel { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px 22px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(30,41,59,0.05); }
+  .panel h2 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; margin: 0 0 16px; color: #475569; text-transform: uppercase; letter-spacing: 0.09em; display: flex; align-items: center; gap: 8px; }
+  .panel h2 i { font-size: 16px; color: #CA8A04; }
+
+  .upload-zone { border: 2px dashed #CBD5E1; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+  .upload-zone:hover, .upload-zone.drag { border-color: #F5B400; background: #FFFBEB; }
+  .upload-zone i { font-size: 30px; color: #CA8A04; }
+  .upload-zone .main-txt { font-weight: 600; margin-top: 8px; color: #1E2A3B; }
+  .upload-zone .sub-txt { color: #64748B; font-size: 12px; margin-top: 4px; }
+  .upload-status { margin-top: 10px; font-size: 13px; }
+  .upload-status.ok { color: #059669; }
+  .upload-status.err { color: #DC2626; }
+
+  .manual-toggle { margin-top: 14px; }
+  .manual-toggle summary { cursor: pointer; color: #64748B; font-size: 12.5px; }
+  textarea { width: 100%; min-height: 80px; background: #F8FAFC; color: #1E2A3B; border: 1px solid #CBD5E1; border-radius: 8px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: vertical; margin-top: 10px; }
+  .toolbar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button { background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; padding: 9px 16px; border-radius: 9px; font-size: 13px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: border-color .15s, background .15s; }
+  button:hover { border-color: #F5B400; background: #FFFBEB; }
+  button.primary { background: #F5B400; color: #3B2504; border-color: #F5B400; font-weight: 600; }
+  button.primary:hover { background: #E0A500; }
+  button.danger { background: #FEF2F2; border-color: #FCA5A5; color: #B91C1C; }
+
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 6px 0 2px; }
+  .podium-card { flex: 1; max-width: 230px; text-align: center; }
+  .avatar { width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; border: 2px solid; position: relative; }
+  .rank-badge { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .p1 .avatar { background: #FEF3C7; border-color: #F5B400; color: #92400E; }
+  .p1 .rank-badge { background: #F5B400; color: #3B2504; }
+  .p2 .avatar { background: #F1F5F9; border-color: #94A3B8; color: #475569; }
+  .p2 .rank-badge { background: #CBD5E1; color: #1E293B; }
+  .p3 .avatar { background: #FFEDD5; border-color: #D89A6A; color: #9A5B26; }
+  .p3 .rank-badge { background: #D89A6A; color: #3A1F0C; }
+  .podium-bar { border-radius: 10px 10px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; }
+  .podium-bar .pt { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; }
+  .b1 { height: 96px; background: linear-gradient(180deg, #FDE68A 0%, #F5B400 100%); color: #3B2504; }
+  .b2 { height: 74px; background: linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%); color: #1E293B; }
+  .b3 { height: 60px; background: linear-gradient(180deg, #F3D0AC 0%, #D89A6A 100%); color: #3A1F0C; }
+  .podium-name { margin-top: 10px; font-weight: 600; font-size: 13px; color: #1E2A3B; }
+  .podium-store { color: #64748B; font-size: 11px; margin-top: 2px; }
+  .p1 { order: 2; } .p2 { order: 1; } .p3 { order: 3; }
+
+  .leaderboard-row { display: grid; grid-template-columns: 28px 1fr 64px 90px; align-items: center; gap: 10px; padding: 7px 0; }
+  .lb-rank { font-family: 'JetBrains Mono', monospace; color: #94A3B8; font-size: 12px; text-align: center; }
+  .lb-track { background: #F1F5F9; border-radius: 6px; height: 26px; position: relative; overflow: hidden; border: 1px solid #E2E8F0; }
+  .lb-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; white-space: nowrap; overflow: hidden; }
+  .lb-fill.perfect { background: linear-gradient(90deg, #047857, #059669); }
+  .lb-fill.good { background: linear-gradient(90deg, #65A30D, #84CC16); }
+  .lb-fill.needimprove { background: linear-gradient(90deg, #D97706, #F59E0B); }
+  .lb-fill.bad { background: linear-gradient(90deg, #C2410C, #F97316); }
+  .lb-fill.poor { background: linear-gradient(90deg, #B91C1C, #DC2626); }
+  .lb-fill .nm { font-size: 12px; font-weight: 600; color: #FFFFFF; }
+  .lb-fill.good .nm, .lb-fill.needimprove .nm { color: #2A1B02; }
+  .lb-pt { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; text-align: right; color: #1E2A3B; }
+
+  .rank-delta { display: inline-flex; align-items: center; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; padding: 3px 7px; border-radius: 20px; white-space: nowrap; }
+  .rank-delta i { font-size: 12px; }
+  .rank-delta.up { background: #DCFCE7; color: #15803D; }
+  .rank-delta.down { background: #FEE2E2; color: #B91C1C; }
+  .rank-delta.same { background: #F1F5F9; color: #64748B; }
+  .rank-delta.new { background: #EFF6FF; color: #2563EB; }
+
+  .watch-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; margin-bottom: 8px; }
+  .watch-left { display: flex; align-items: center; gap: 10px; }
+  .watch-left i { color: #DC2626; font-size: 18px; }
+  .watch-name { font-weight: 600; font-size: 14px; color: #1E2A3B; }
+  .watch-store { color: #94655F; font-size: 11px; }
+  .watch-grade { font-size: 10.5px; color: #94655F; margin-top: 2px; }
+  .watch-pt { font-family: 'JetBrains Mono', monospace; color: #DC2626; font-weight: 700; font-size: 19px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .table-scroll { height: 80vh; overflow-y: auto; overflow-x: auto; border: 1px solid #E2E8F0; border-radius: 10px; }
+  .history-scroll { height: 80vh; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 10px; padding: 4px 10px; }
+  .table-scroll table { border-collapse: separate; border-spacing: 0; }
+  .table-scroll thead th { position: sticky; top: 0; background: #F8FAFC; z-index: 2; box-shadow: inset 0 -1px 0 #E2E8F0, 0 1px 0 #E2E8F0; }
+  .filter-bar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-field { display: flex; flex-direction: column; gap: 4px; }
+  .filter-field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748B; font-weight: 600; }
+  .filter-field select { background: #FFFFFF; color: #1E2A3B; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px 10px; font-size: 13px; min-width: 170px; cursor: pointer; }
+  .filter-field select:focus { outline: none; border-color: #F5B400; }
+  .filter-count { font-size: 12.5px; color: #64748B; margin-left: auto; }
+  th, td { padding: 7px 8px; text-align: center; border-bottom: 1px solid #E2E8F0; }
+  th { color: #64748B; font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.05em; }
+  td.name, th.name { text-align: left; }
+  td input { width: 52px; background: #F8FAFC; color: #1E2A3B; border: 1px solid #CBD5E1; border-radius: 5px; padding: 4px; text-align: center; font-size: 12px; }
+  td.name input, td.store input { width: 100%; text-align: left; }
+  .grade { padding: 3px 9px; border-radius: 20px; font-weight: 700; font-size: 10px; white-space: nowrap; }
+  .grade.perfect { background: #059669; color: #FFFFFF; }
+  .grade.good { background: #84CC16; color: #1A2E05; }
+  .grade.needimprove { background: #F59E0B; color: #3B2504; }
+  .grade.bad { background: #F97316; color: #FFFFFF; }
+  .grade.poor { background: #DC2626; color: #FFFFFF; }
+  .rm { background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 16px; padding: 2px 6px; }
+  .rm:hover { color: #DC2626; }
+
+  .snap-item { display: block; padding: 10px 4px; border-bottom: 1px solid #E2E8F0; font-size: 13px; }
+  .snap-item:last-child { border-bottom: none; }
+  .snap-top { display: flex; justify-content: space-between; align-items: center; }
+  .snap-label { font-weight: 600; color: #1E2A3B; }
+  .snap-detail { color: #64748B; font-size: 12px; margin-top: 2px; }
+  .snap-avg-wrap { display: flex; align-items: center; gap: 8px; }
+  .snap-avg { font-family: 'JetBrains Mono', monospace; color: #CA8A04; font-weight: 700; font-size: 16px; }
+  .snap-trend { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .snap-trend.up { background: #DCFCE7; color: #15803D; }
+  .snap-trend.down { background: #FEE2E2; color: #B91C1C; }
+  .snap-trend.same { background: #F1F5F9; color: #64748B; }
+  .snap-toggle { cursor: pointer; color: #94A3B8; font-size: 11px; margin-top: 4px; user-select: none; }
+  .snap-toggle:hover { color: #CA8A04; }
+  .snap-body { margin-top: 10px; padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; }
+  .snap-meta { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #E2E8F0; }
+  .snap-meta .modal-list-item { padding: 3px 0; font-size: 12px; }
+  .snap-meta .modal-list-item span:first-child { color: #94A3B8; }
+  .snap-meta .modal-list-item span:last-child { color: #1E2A3B; font-weight: 600; }
+  .snap-grade-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .snap-grade-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+  .snap-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .snap-mover-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 10px; }
+  .snap-mover-card .mv-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; font-weight: 700; }
+  .snap-mover-card .mv-name { font-size: 12.5px; font-weight: 600; color: #1E2A3B; margin-top: 3px; }
+  .snap-mover-card .mv-delta { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .snap-mover-card.gain .mv-delta { color: #15803D; }
+  .snap-mover-card.drop .mv-delta { color: #B91C1C; }
+  .snap-nodetail { color: #94A3B8; font-size: 12px; font-style: italic; }
+  .history-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12.5px; color: #64748B; }
+  .history-summary b { color: #1E2A3B; }
+  .sparkline-wrap { margin-bottom: 16px; }
+  .sparkline-wrap svg { width: 100%; height: 60px; display: block; }
+  .empty { color: #94A3B8; font-size: 13px; text-align: center; padding: 24px 0; }
+  .empty i { display: block; font-size: 26px; margin-bottom: 8px; }
+
+  #storeTable td.name, #storeTable th.name { text-align: left; }
+  #storeTable tr.store-worst td.name { color: #B91C1C; font-weight: 700; }
+  .clickable-name { cursor: pointer; }
+  .clickable-name:hover { text-decoration: underline; color: #CA8A04; }
+
+  .store-compare-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .store-chip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; color: #475569; font-weight: 500; }
+  .store-chip.active { background: #1E2A3B; color: #FFFFFF; border-color: #1E2A3B; }
+  .store-compare-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
+  .store-compare-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .store-compare-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal-box { background: #FFFFFF; border-radius: 16px; padding: 22px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #1E2A3B; }
+  .modal-sub { color: #64748B; font-size: 12.5px; margin-top: 2px; }
+  .modal-close { border: none; background: #F1F5F9; border-radius: 50%; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .modal-list-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F1F5F9; font-size: 12.5px; }
+  .modal-list-item:last-child { border-bottom: none; }
+
+  @media print {
+    .panel { break-inside: avoid; box-shadow: none; }
+    #adminPanel, .toolbar, .filter-bar, .hero-right, .upload-status { display: none !important; }
+    .table-scroll, .history-scroll { height: auto !important; overflow: visible !important; }
+    body { background: #FFFFFF; }
+  }
+
+  .insight-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .insight-card { border:1px solid #E2E8F0; border-radius:12px; padding:14px; background:#F8FAFC; }
+  .insight-card h3 { margin:0 0 8px; font-family:'Space Grotesk',sans-serif; font-size:13px; color:#334155; }
+  .insight-card .big { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; }
+  .insight-card .muted { color:#64748B; font-size:11.5px; margin-top:4px; }
+  .insight-card.gain { background:#F0FDF4; border-color:#BBF7D0; } .insight-card.drop { background:#FEF2F2; border-color:#FECACA; }
+  .score-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .score-card { border:1px solid #E2E8F0; border-radius:12px; padding:14px; background:#FFFFFF; }
+  .score-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+  .score-name { font-weight:700; font-size:13px; } .score-value { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:20px; }
+  .score-bar { height:8px; background:#E2E8F0; border-radius:20px; overflow:hidden; margin:10px 0 8px; } .score-bar span { display:block; height:100%; background:#CA8A04; border-radius:20px; }
+  .score-meta { display:flex; justify-content:space-between; color:#64748B; font-size:11px; }
+  .search-input { min-width:240px; background:#FFF; color:#1E2A3B; border:1px solid #CBD5E1; border-radius:8px; padding:8px 10px; font-size:13px; }
+  .date-tools { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
+  .date-tools input { background:#FFF; color:#1E2A3B; border:1px solid #CBD5E1; border-radius:8px; padding:8px 10px; font-size:13px; }
+  .alert-list { display:grid; gap:8px; } .alert-item { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:10px; border:1px solid #E2E8F0; background:#F8FAFC; }
+  .alert-item i { font-size:18px; } .alert-item strong { font-size:13px; } .alert-item div { font-size:11.5px; color:#64748B; margin-top:2px; }
+  .alert-item.critical { background:#FEF2F2; border-color:#FECACA; } .alert-item.warning { background:#FFFBEB; border-color:#FDE68A; } .alert-item.good { background:#F0FDF4; border-color:#BBF7D0; }
+  .mobile-leader { display:none; }
+  .mobile-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; } .mobile-kpi { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:12px; } .mobile-kpi .k { font-size:10px; color:#64748B; text-transform:uppercase; } .mobile-kpi .v { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; margin-top:4px; }
+  .focus-box { margin-top:14px; padding:12px; border-radius:10px; background:#FFFBEB; border:1px solid #FDE68A; } .focus-box b { font-size:12px; } .focus-box div { font-size:12px; margin-top:4px; color:#475569; }
+  .modal-breakdown { display:grid; grid-template-columns:1fr; gap:7px; margin:14px 0; } .break-row { display:grid; grid-template-columns:95px 1fr 44px; gap:8px; align-items:center; font-size:11.5px; } .break-track { height:8px; background:#E2E8F0; border-radius:10px; overflow:hidden; } .break-fill { height:100%; background:#CA8A04; border-radius:10px; }
+  .modal-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; } .modal-kpi { padding:10px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:9px; text-align:center; } .modal-kpi b { display:block; font-family:'JetBrains Mono',monospace; font-size:16px; } .modal-kpi span { font-size:10px; color:#64748B; }
+  .mover-list { display:grid; gap:7px; } .mover-row { display:flex; justify-content:space-between; align-items:center; padding:9px 10px; border-radius:9px; background:#F8FAFC; border:1px solid #E2E8F0; } .mover-row .nm { font-size:12px; font-weight:600; } .mover-row .delta { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; }
+  @media(max-width:800px){ .score-grid{grid-template-columns:1fr 1fr;} .insight-grid{grid-template-columns:1fr;} .mobile-leader{display:block;} .wrap{max-width:100%;} .panel{padding:16px;} .hero-left h1{font-size:24px;} .grade-stats{grid-template-columns:repeat(2,1fr);} .stats{grid-template-columns:1fr 1fr;} .table-scroll{height:62vh;} .history-scroll{height:62vh;} }
+  @media(max-width:560px){ body{padding:14px 10px 40px;} .hero{align-items:flex-start;} .hero-right{width:100%; justify-content:space-between;} .grade-stats{grid-template-columns:1fr 1fr;} .score-grid{grid-template-columns:1fr;} .podium{gap:6px;} .podium-card{max-width:33%;} .podium-name{font-size:11px;} .podium-store{display:none;} .search-input{min-width:0;width:100%;} .date-tools{display:grid;grid-template-columns:1fr 1fr;} .date-tools button{justify-content:center;} .modal-kpis{grid-template-columns:1fr 1fr 1fr;} .break-row{grid-template-columns:78px 1fr 40px;} }
+
+  body.gated .wrap { display: none; }
+  #viewGate { display: none; }
+  body.gated #viewGate { display: flex; }
+</style>
+</head>
+<body class="gated">
+<div id="viewGate" class="modal-overlay" style="z-index:200;">
+  <div class="modal-box" style="max-width:380px; text-align:center;">
+    <div style="font-size:32px; margin-bottom:8px;"><i class="ti ti-trophy" style="color:#CA8A04;"></i></div>
+    <div class="modal-title" style="justify-content:center;">Big Malang 2</div>
+    <div class="modal-sub" style="margin-bottom:18px;">Login dengan akun tim untuk membuka dashboard.</div>
+    <input type="email" id="viewGateEmail" placeholder="Email" style="width:100%; padding:10px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; margin-bottom:10px;" autocomplete="username">
+    <input type="password" id="viewGatePassword" placeholder="Password" style="width:100%; padding:10px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; margin-bottom:10px;" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitViewGate()">
+    <button class="primary" id="viewGateSubmit" style="width:100%; justify-content:center;" onclick="submitViewGate()">Masuk</button>
+    <div id="viewGateError" style="color:#DC2626; font-size:12.5px; margin-top:10px; display:none;"></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-left">
+      <h1><i class="ti ti-trophy"></i>Big Malang 2</h1>
+      <div class="sub">Point Dashboard — Daily Top 3 &amp; Bottom 3, update terpusat oleh admin.</div>
+    </div>
+    <div class="hero-right">
+      <span class="mode-badge" id="modeBadge"></span>
+      <button id="adminBtn" onclick="toggleAdmin()"><i class="ti ti-lock"></i><span id="adminBtnLabel">Login Admin</span></button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="lbl"><i class="ti ti-users"></i>ERO</div><div class="val" id="statCount">0</div></div>
+    <div class="stat-card"><div class="lbl"><i class="ti ti-chart-bar"></i>Rata-rata Poin</div><div class="val" id="statAvg">0</div>
+      <div class="upd" id="lastUpdate"></div>
+    </div>
+  </div>
+  <div class="grade-stats">
+    <div class="stat-card perfect"><div class="lbl"><i class="ti ti-crown"></i>Perfect</div><div class="val" id="statPerfect">0</div><div class="pct" id="pctPerfect">0%</div></div>
+    <div class="stat-card good"><div class="lbl"><i class="ti ti-star"></i>Good</div><div class="val" id="statGood">0</div><div class="pct" id="pctGood">0%</div></div>
+    <div class="stat-card needimprove"><div class="lbl"><i class="ti ti-trending-up"></i>Need Improve</div><div class="val" id="statNeedImprove">0</div><div class="pct" id="pctNeedImprove">0%</div></div>
+    <div class="stat-card bad"><div class="lbl"><i class="ti ti-alert-circle"></i>Bad</div><div class="val" id="statBad2">0</div><div class="pct" id="pctBad">0%</div></div>
+    <div class="stat-card poor"><div class="lbl"><i class="ti ti-alert-triangle"></i>Poor</div><div class="val" id="statPoor">0</div><div class="pct" id="pctPoor">0%</div></div>
+  </div>
+
+
+  <div class="panel mobile-leader">
+    <h2><i class="ti ti-device-mobile"></i>Mobile Leader View</h2>
+    <div class="mobile-grid">
+      <div class="mobile-kpi"><div class="k">ERO</div><div class="v" id="mCount">0</div></div>
+      <div class="mobile-kpi"><div class="k">Rata-rata</div><div class="v" id="mAvg">0</div></div>
+      <div class="mobile-kpi"><div class="k">Improved</div><div class="v" id="mImproved">0</div></div>
+      <div class="mobile-kpi"><div class="k">Alert</div><div class="v" id="mAlerts">0</div></div>
+    </div>
+    <div class="focus-box"><b>Fokus hari ini</b><div id="mFocus">Memuat prioritas...</div></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-bolt"></i>Yesterday vs Today</h2>
+    <div id="yesterdayToday" class="insight-grid"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-building-store"></i>Store Performance Score</h2>
+    <div class="sub" style="color:#64748B;font-size:12.5px;margin-bottom:12px;">Skor store dihitung dari rata-rata poin saat ini (maksimum 10 = 100).</div>
+    <div id="storeScoreGrid" class="score-grid"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-arrows-up-down"></i>Most Improved &amp; Biggest Drop</h2>
+    <div id="moversPanel" class="insight-grid"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-bell"></i>Alert Otomatis</h2>
+    <div id="alertPanel" class="alert-list"></div>
+  </div>
+
+  <div class="panel" id="adminPanel" style="display:none;">
+    <h2><i class="ti ti-upload"></i>Update Data Harian</h2>
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <i class="ti ti-file-spreadsheet"></i>
+      <div class="main-txt">Klik atau seret file Excel ke sini</div>
+      <div class="sub-txt">Format sama seperti dashboard_1.xlsx — mendukung .xlsx dan .xls</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+    </div>
+    <div id="uploadStatus" class="upload-status"></div>
+    <div id="syncStatus" class="upload-status"></div>
+    <details class="manual-toggle">
+      <summary>Atau input/edit manual (paste dari Excel)</summary>
+      <textarea id="pasteBox" placeholder="Nama	Device	Acc	Operator	Boltech	AR Acc	AR Boltech	Store"></textarea>
+      <div class="toolbar">
+        <button class="primary" onclick="importPaste()"><i class="ti ti-file-import"></i>Tambahkan baris ini</button>
+        <button onclick="addRow()"><i class="ti ti-plus"></i>Tambah baris kosong</button>
+        <button onclick="saveSnapshot()"><i class="ti ti-device-floppy"></i>Simpan snapshot hari ini</button>
+        <button class="danger" onclick="clearAll()"><i class="ti ti-trash"></i>Hapus semua</button>
+        <button onclick="loadData();loadHistory();"><i class="ti ti-refresh"></i>Refresh dari server</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-medal"></i>Top 3</h2>
+    <div id="podium" class="podium"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-list-details"></i>Papan Peringkat Lengkap</h2>
+    <div id="leaderboard"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-alert-triangle"></i>Bottom 3 — Perlu Perhatian</h2>
+    <div id="watchlist"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-building-store"></i>Ringkasan per Store</h2>
+    <div class="sub" style="color:#64748B; font-size:12.5px; margin-bottom:12px;">Diurutkan dari rata-rata poin terendah — toko yang paling perlu dibantu tampil paling atas.</div>
+    <div style="overflow-x:auto;">
+      <table id="storeTable">
+        <thead>
+          <tr>
+            <th class="name">Store</th><th>ERO</th><th>Rata-rata</th><th>Perfect</th><th>Good</th><th>Need Improve</th><th>Bad</th><th>Poor</th>
+          </tr>
+        </thead>
+        <tbody id="storeTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-table"></i>Semua Data (<span id="rowCount">0</span> orang)</h2>
+    <div class="filter-bar">
+      <div class="filter-field"><label>Cari Nama ERO</label><input class="search-input" id="searchName" type="search" placeholder="Ketik nama ERO..." oninput="onFilterChange()"></div>
+      <div class="filter-field">
+        <label>Filter Store</label>
+        <select id="filterStore" onchange="onFilterChange()"><option value="">Semua Store</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Filter Grade</label>
+        <select id="filterGrade" onchange="onFilterChange()">
+          <option value="">Semua Grade</option>
+          <option value="Perfect">Perfect</option>
+          <option value="Good">Good</option>
+          <option value="Need Improve">Need Improve</option>
+          <option value="Bad">Bad</option>
+          <option value="Poor">Poor</option>
+        </select>
+      </div>
+      <button onclick="resetFilters()"><i class="ti ti-filter-x"></i>Reset Filter</button>
+      <div class="filter-count" id="filterCount"></div>
+    </div>
+    <div class="toolbar" style="margin-top:0; margin-bottom:14px;">
+      <button onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i>Download Excel</button>
+      <button onclick="window.print()"><i class="ti ti-printer"></i>Cetak / Simpan PDF</button>
+    </div>
+    <div class="sub" style="color:#94A3B8; font-size:11.5px; margin-bottom:10px;">Klik nama di tabel atau papan peringkat untuk melihat grafik tren poin orang tersebut.</div>
+    <div class="table-scroll">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th class="name">Nama</th><th>Device</th><th>Acc</th><th>Operator</th><th>Boltech</th>
+            <th>AR Acc</th><th>AR Boltech</th><th>Total</th><th>Grade</th><th>Progres</th><th>Store</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-timeline"></i>Riwayat Progres</h2>
+    <div class="date-tools">
+      <div class="filter-field"><label>Dari tanggal</label><input type="date" id="dateFrom" onchange="applyDateFilter()"></div>
+      <div class="filter-field"><label>Sampai tanggal</label><input type="date" id="dateTo" onchange="applyDateFilter()"></div>
+      <button onclick="setDateRange(7)">7 Hari</button><button onclick="setDateRange(14)">14 Hari</button><button onclick="setDateRange(30)">30 Hari</button><button onclick="clearDateFilter()">Semua</button>
+    </div>
+    <div id="historySummary"></div>
+    <div id="historyTrend"></div>
+    <div id="history" class="history-scroll"></div>
+  </div>
+
+  <div class="panel">
+    <h2><i class="ti ti-chart-line"></i>Perbandingan Antar Store dari Waktu ke Waktu</h2>
+    <div class="sub" style="color:#64748B; font-size:12.5px; margin-bottom:12px;">Berdasarkan data snapshot yang tersimpan di Riwayat Progres. Pilih maksimal 5 store untuk dibandingkan.</div>
+    <div id="storeCompareControls" class="store-compare-controls"></div>
+    <div id="storeCompareChart"></div>
+  </div>
+</div>
+
+<div id="personModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closePersonModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="personModalName">-</div>
+        <div class="modal-sub" id="personModalStore">-</div>
+      </div>
+      <button class="modal-close" onclick="closePersonModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="personModalChart"></div>
+    <div id="personModalList"></div>
+  </div>
+</div>
+
+<script>
+let rows = [];
+let lastUpdateLabel = '';
+const fields = ['device','acc','operator','boltech','arAcc','arBoltech'];
+
+const SEED = [
+  ['Arsita Winanafsi Radita Debbi',2,3,1,1,0.5,1,'IBOX SOEKARNO HATTA MALANG'],
+  ['Nur Fadhilah',3,3,1,0,1,0.5,'ERAFONE MALL ARAYA MALANG'],
+  ['Handika Dewa Tengku Firmansyah',3,3,1,0,1,0,'ERAFONE MALL ARAYA MALANG'],
+  ['Khairul Anwar',3,3,1,0,1,0,'ERAFONE & MORE TUMENGGUNG SURYO'],
+  ['Patria Rafie Alief Faiz',2,3,0,1,0.5,1,'ERAFONE RUKO DAMPIT'],
+  ['Keyzha Aprina Ferisca',3,3,1,0,0.5,0,'ERAFONE WLINGI BLITAR'],
+  ['Ketut Riani',3,3,1,0,0.5,0,'ERAFONE KESAMBEN BLITAR'],
+  ['Gandi Wirapeta',3,3,0.5,0,0.5,0.2,'ERAFONE KESAMBEN BLITAR'],
+  ['Feren Dwi Astuti',2,3,1,0,1,0,'ERAFONE & MORE SAWOJAJAR MALANG'],
+  ['Faisel Arif Mustofa Sansofyan',3,3,0,0,0.5,0.5,'IBOX SOEKARNO HATTA MALANG'],
+  ['Jonnathan Virgan Gunawan',3,3,0,0,1,0,'ERAFONE MALL ARAYA MALANG'],
+  ['Fashna Salsaqila',3,3,0,0,1,0,'ERAFONE LIPPO PLAZA BATU'],
+  ['Mustafidurrohman',3,3,1,0,0,0,'ERAFONE LIPPO PLAZA BATU'],
+  ['Sofi Aprilia Kusuma Ningrum',3,3,0.2,0,0.5,0,'ERAFONE RUKO DAMPIT'],
+  ['Anis Maulidya',3,3,0.2,0,0.5,0,'ERAFONE RUKO A YANI MALANG'],
+  ['Mohamad Hilmi Abidin',3,3,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
+  ['Irma Sofyani',3,3,0,0,0.5,0,'IBOX SOEKARNO HATTA MALANG'],
+  ['Reynaldi Dwi Himawan',3,0,1,1,0.5,1,'ERAFONE MALL ARAYA MALANG'],
+  ['Deby Yulanda',3,1.5,1,0,1,0,'ERAFONE KESAMBEN BLITAR'],
+  ['Dian Angga Pratama',3,1.5,1,0,0.5,0.5,'ERAFONE WLINGI BLITAR'],
+  ['Ferly Andika Pratama',3,3,0,0,0.2,0,'IBOX SOEKARNO HATTA MALANG'],
+  ['Mochammad Bagas Nirvana',3,3,0,0,0.2,0,'IBOX SOEKARNO HATTA MALANG'],
+  ['Roicha Firdaus',3,2,0,0,0.5,0,'ERAFONE KESAMBEN BLITAR'],
+  ['Nurul Fithri Asani',2,3,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
+  ['Nelafi Aulia Faza',0,3,1,0,1,0,'ERAFONE MAL OLYMPIC GARDEN'],
+  ['Vikry Zamzany Nugraha',0,3,0,0,1,1,'ERAFONE & MORE SAWOJAJAR MALANG'],
+  ['Mahirti Johar',3,0,0,0,1,0.5,'ERAFONE LIPPO PLAZA BATU'],
+  ['Eka Abdullah Effendy',0,3,1,0,0.5,0,'ERAFONE MAL OLYMPIC GARDEN'],
+  ['Delvi Nurhayati',3,0,1,0,0.2,0,'ERAFONE RUKO TUREN MALANG'],
+  ['Bustantheo Firdaus Mustaghfirin',3,0,0,0,1,0.2,'ERAFONE & MORE TLOGOMAS MALANG'],
+  ['Viona Hatvilillah',3,0,1,0,0,0.2,'ERAFONE RUKO PAKIS MALANG'],
+  ['Akbar Syaihidillah Afzy',3,0,0,0,1,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
+  ['Wahyu Melati',3,0,0.2,0,0.5,0,'ERAFONE RUKO TUREN MALANG'],
+  ['Nikki Nur Hidayat',2,0,1,0,0.2,0.5,'ERAFONE RUKO PAKIS MALANG'],
+  ['Vina Ismatul Maula',3,0,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
+  ['Devi Agustin Yuliyanti',3,0,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
+  ['Muhamad Huanka Alifiansyah Frediawan',3,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
+  ['Hansah Saiful Huda',3,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
+  ['Atrisa Diasetyani',3,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
+  ['Dimas Ananda Saputra',0,1.5,0,0,0.5,1,'ERAFONE RUKO DAMPIT'],
+  ['Wahyu Wardana',2,0,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
+  ['Muhammad Zallum',2,0,0,0,0.5,0,'ERAFONE RUKO TUREN MALANG'],
+  ['Didik Priyantoro',0,0,1,0,1,0,'ERAFONE & MORE TLOGOMAS MALANG'],
+  ['Arik Pandika',0,0,1,0,0.5,0.2,'ERAFONE & MORE SAWOJAJAR MALANG'],
+  ['Wenike Kresta Diva',0,0,1,0,0.5,0,'ERAFONE RUKO A YANI MALANG'],
+  ['Alifi Saputra',0,0,1,0,0.2,0,'ERAFONE MAL OLYMPIC GARDEN'],
+  ['Darmawan Romadhan',0,0,0,0,1,0,'ERAFONE LIPPO PLAZA BATU'],
+  ['Wahyu Eko Prasetyo',0,0,0,0,1,0,'ERAFONE & MORE TUMENGGUNG SURYO'],
+  ['Mario Ady Cahyono',0,0,0,0,0.5,0,'ERAFONE RUKO A YANI MALANG'],
+  ['Putri Wahyu Wardhani',0,0,0,0,0.5,0,'ERAFONE MAL OLYMPIC GARDEN'],
+  ['Mohamad Fahriza',0,0,0,0,0.5,0,'ERAFONE RUKO TUREN MALANG'],
+  ['Khilma Mahirotun Nadzifah',0,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
+  ['Amelia Agil Anggitarani',0,0,0,0,0.5,0,'ERAFONE & MORE TLOGOMAS MALANG'],
+  ['Dava Afif Kamaludin',0,0,0.2,0,0,0.2,'ERAFONE MAL OLYMPIC GARDEN'],
+  ['Novi Vitri Aningtiyas',0,0,0,0,0.2,0,'ERAFONE RUKO DAMPIT'],
+  ['Ilfan Donny Arifianto',0,0,0,0,0.2,0,'ERAFONE RUKO A YANI MALANG']
+
+].map(a=>({name:a[0], device:a[1], acc:a[2], operator:a[3], boltech:a[4], arAcc:a[5], arBoltech:a[6], store:a[7]}));
+
+function calcTotal(r){ return fields.reduce((s,f)=>s+(parseFloat(r[f])||0),0); }
+function calcGrade(total){
+  if(total >= 10) return 'Perfect';
+  if(total >= 8) return 'Good';
+  if(total >= 5) return 'Need Improve';
+  if(total >= 3) return 'Bad';
+  return 'Poor';
+}
+function gradeClass(grade){ return grade.toLowerCase().replace(/\s+/g,''); }
+function initials(name){ return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+let filterStore = '';
+let filterGrade = '';
+let searchName = '';
+let dateFrom = '';
+let dateTo = '';
+let filteredHistoryData = [];
+function onFilterChange(){
+  filterStore = document.getElementById('filterStore').value;
+  filterGrade = document.getElementById('filterGrade').value;
+  searchName = (document.getElementById('searchName')?.value || '').trim().toLowerCase();
+  render();
+}
+function resetFilters(){
+  filterStore = ''; filterGrade = ''; searchName = '';
+  document.getElementById('filterStore').value = '';
+  document.getElementById('filterGrade').value = '';
+  if(document.getElementById('searchName')) document.getElementById('searchName').value = '';
+  render();
+}
+function populateStoreOptions(ranked){
+  const sel = document.getElementById('filterStore');
+  if(!sel) return;
+  const stores = [...new Set(ranked.map(r=>r.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Semua Store</option>' + stores.map(s=>`<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('');
+  sel.value = stores.includes(current) ? current : '';
+}
+function rankDeltaHtml(prevRank, currentRank){
+  if(prevRank===null || prevRank===undefined || isNaN(prevRank)) return '<span class="rank-delta new">Baru</span>';
+  const delta = prevRank - currentRank;
+  if(delta > 0) return `<span class="rank-delta up"><i class="ti ti-arrow-narrow-up"></i>${delta}</span>`;
+  if(delta < 0) return `<span class="rank-delta down"><i class="ti ti-arrow-narrow-down"></i>${Math.abs(delta)}</span>`;
+  return `<span class="rank-delta same"><i class="ti ti-minus"></i></span>`;
+}
+
+const SUPABASE_URL = 'https://bxdjuyixhqgsleyuwvml.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_YZ2TegOjMOcXRFbw2Awbhw_cdpBG7w8';
+const SUPABASE_READY = !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
+const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let isAdmin=false, currentUser=null, saveTimer=null;
+
+// Isi dengan email akun Supabase Auth yang berhak jadi ADMIN (boleh lebih dari satu, pisahkan koma).
+// Akun lain yang login dengan email di luar daftar ini otomatis jadi mode "lihat saja".
+const ADMIN_EMAILS = ['GANTI-DENGAN-EMAIL-ADMIN@domain.com'].map(e=>e.trim().toLowerCase());
+function isAdminFromUser(user){
+  return !!user && ADMIN_EMAILS.includes((user.email||'').toLowerCase());
+}
+function syncMessage(msg,ok=true){const el=document.getElementById('syncStatus');if(!el)return;el.textContent=msg||'';el.className='upload-status '+(ok?'ok':'err');}
+function updateAdminUI(){document.getElementById('adminPanel').style.display=isAdmin?'block':'none';document.getElementById('adminBtnLabel').textContent=isAdmin?'Logout':'Login Admin';const badge=document.getElementById('modeBadge');badge.textContent=isAdmin?'Mode admin':'Mode lihat saja';badge.className='mode-badge '+(isAdmin?'admin':'view');}
+async function loadAdminState(){
+  if(!SUPABASE_READY){isAdmin=false;updateAdminUI();syncMessage('Supabase belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di index.html.',false);return;}
+  const {data:{session}}=await sb.auth.getSession();currentUser=session?.user||null;isAdmin=isAdminFromUser(currentUser);updateAdminUI();
+  if(isAdmin)syncMessage('Login admin aktif: '+(currentUser.email||'akun admin'));
+}
+async function toggleAdmin(){
+  if(!SUPABASE_READY){alert('Dashboard belum dikonfigurasi ke Supabase. Ikuti PETUNJUK-GITHUB-PAGES-SUPABASE.md.');return;}
+  if(isAdmin){if(!confirm('Keluar dari mode admin? Anda perlu login ulang untuk membuka dashboard lagi.'))return;await sb.auth.signOut();location.reload();return;}
+  const email=prompt('Email admin Supabase:');if(email===null)return;const password=prompt('Password admin:');if(password===null)return;
+  const {data,error}=await sb.auth.signInWithPassword({email:email.trim(),password});if(error){alert('Login gagal: '+error.message);return;}
+  currentUser=data.user;isAdmin=isAdminFromUser(currentUser);updateAdminUI();render();syncMessage(isAdmin?'Login admin berhasil.':'Login berhasil (mode lihat saja — email ini tidak terdaftar sebagai admin).');
+}
+function normalizeRows(value){if(!Array.isArray(value))return[];return value.map(r=>({name:String(r.name??''),device:parseFloat(r.device)||0,acc:parseFloat(r.acc)||0,operator:parseFloat(r.operator)||0,boltech:parseFloat(r.boltech)||0,arAcc:parseFloat(r.arAcc)||0,arBoltech:parseFloat(r.arBoltech)||0,store:String(r.store??''),prevRank:(r.prevRank===null||r.prevRank===undefined)?null:parseInt(r.prevRank)}));}
+async function loadData(){
+  if(!SUPABASE_READY){rows=SEED.slice();lastUpdateLabel='Data awal (belum tersambung server)';render();return;}
+  const {data,error}=await sb.from('dashboard_state').select('rows,last_update').eq('id',1).maybeSingle();
+  if(error){console.error(error);rows=SEED.slice();lastUpdateLabel='Gagal membaca server';syncMessage('Gagal membaca data pusat: '+error.message,false);render();return;}
+  if(data&&Array.isArray(data.rows)&&data.rows.length){rows=normalizeRows(data.rows);lastUpdateLabel=data.last_update||'';}else{rows=SEED.slice();lastUpdateLabel='Data contoh bawaan HTML';}
+  render();
+}
+async function persist(){
+  if(!SUPABASE_READY){syncMessage('Belum tersambung ke server pusat.',false);return false;}
+  if(!isAdmin){syncMessage('Hanya admin yang boleh menyimpan perubahan.',false);return false;}
+  const payload={id:1,rows,last_update:lastUpdateLabel,updated_by:currentUser?.email||null,updated_at:new Date().toISOString()};
+  const {error}=await sb.from('dashboard_state').upsert(payload,{onConflict:'id'});
+  if(error){console.error(error);syncMessage('Gagal menyimpan ke server pusat: '+error.message,false);return false;}
+  syncMessage('✓ Data tersimpan di server pusat. Semua perangkat akan melihat data terbaru.');return true;
+}
+function schedulePersist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist(),350);}
+function setStatus(msg,ok){const el=document.getElementById('uploadStatus');el.textContent=msg;el.className='upload-status '+(ok?'ok':'err');}
+function handleFile(file){
+  if(!isAdmin){alert('Login admin terlebih dahulu.');return;} if(!file)return;
+  const reader=new FileReader();reader.onload=async function(e){try{
+    const data=new Uint8Array(e.target.result),wb=XLSX.read(data,{type:'array'}),sheet=wb.Sheets[wb.SheetNames[0]],grid=XLSX.utils.sheet_to_json(sheet,{header:1,defval:null,raw:true});
+    let headerRowIdx=-1,totalColIdx=-1;for(let i=0;i<grid.length;i++){const idx=grid[i].findIndex(c=>typeof c==='string'&&c.trim().toLowerCase()==='total point');if(idx>-1){headerRowIdx=i;totalColIdx=idx;break;}}
+    if(headerRowIdx===-1)throw new Error('Kolom "Total Point" tidak ditemukan. Pastikan format file sama seperti contoh.');
+    const newRows=[];
+    const beforeSorted=rows.map(r=>({name:r.name,total:calcTotal(r)})).sort((a,b)=>b.total-a.total);
+    const prevRankMap={};beforeSorted.forEach((r,i)=>{prevRankMap[r.name]=i+1;});
+    for(let i=headerRowIdx+1;i<grid.length;i++){const r=grid[i];if(!r||!r[0]||typeof r[0]!=='string'||r[0].trim()==='')continue;const total=parseFloat(r[totalColIdx]);if(isNaN(total))continue;const nm=String(r[0]).trim();newRows.push({name:nm,device:parseFloat(r[totalColIdx-6])||0,acc:parseFloat(r[totalColIdx-5])||0,operator:parseFloat(r[totalColIdx-4])||0,boltech:parseFloat(r[totalColIdx-3])||0,arAcc:parseFloat(r[totalColIdx-2])||0,arBoltech:parseFloat(r[totalColIdx-1])||0,store:r[totalColIdx+2]?String(r[totalColIdx+2]).trim():'',prevRank:Object.prototype.hasOwnProperty.call(prevRankMap,nm)?prevRankMap[nm]:null});}
+    if(newRows.length===0)throw new Error('Tidak ada baris data yang bisa dibaca dari file ini.');
+    rows=newRows;lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();document.getElementById('fileInput').value='';
+
+    const newWithTotal = newRows.map(r=>({name:r.name, total:calcTotal(r), store:r.store}));
+    const newFingerprint = fingerprintFromRows(newWithTotal);
+    const lastSnap = (historyData && historyData.length) ? historyData[0] : null;
+    let isDuplicate = false;
+    if(lastSnap && lastSnap.rows_snapshot && lastSnap.rows_snapshot.length === newWithTotal.length){
+      const lastFingerprint = fingerprintFromRows(lastSnap.rows_snapshot.map(r=>({name:r.name, total:r.total, store:r.store})));
+      isDuplicate = (lastFingerprint === newFingerprint);
+    }
+
+    if(isDuplicate){
+      setStatus('Berhasil memuat '+newRows.length+' orang dari "'+file.name+'" ke server pusat. Data sama seperti snapshot terakhir — tidak membuat snapshot baru agar riwayat tetap bersih.',true);
+      return;
+    }
+
+    const autoLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+    const snapResult=await createSnapshotEntry(autoLabel, {fileName:file.name});
+    if(snapResult.ok){
+      await afterSnapshotSaved();
+      setStatus('Berhasil memuat '+newRows.length+' orang dari "'+file.name+'" dan menyimpan ke server pusat. Snapshot otomatis tersimpan.',true);
+    } else {
+      setStatus('Berhasil memuat '+newRows.length+' orang dari "'+file.name+'" ke server pusat. Snapshot otomatis gagal: '+snapResult.message,true);
+    }
+  }catch(err){setStatus('Gagal membaca file: '+err.message,false);}};reader.readAsArrayBuffer(file);
+}
+const dz=document.getElementById('dropZone');['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));dz.addEventListener('drop',e=>{const file=e.dataTransfer.files[0];if(file)handleFile(file);});
+function importPaste(){
+  if(!isAdmin){alert('Login admin terlebih dahulu.');return;}const text=document.getElementById('pasteBox').value.trim();if(!text)return;const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);lines.forEach(line=>{const cols=line.split('\t').map(c=>c.trim());if(cols.length<8)return;rows.push({name:cols[0],device:parseFloat(cols[1])||0,acc:parseFloat(cols[2])||0,operator:parseFloat(cols[3])||0,boltech:parseFloat(cols[4])||0,arAcc:parseFloat(cols[5])||0,arBoltech:parseFloat(cols[6])||0,store:(cols.length>=10?cols[9]:cols[7])||'',prevRank:null});});document.getElementById('pasteBox').value='';lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();
+}
+function addRow(){if(!isAdmin){alert('Login admin terlebih dahulu.');return;}rows.push({name:'Nama baru',device:0,acc:0,operator:0,boltech:0,arAcc:0,arBoltech:0,store:'',prevRank:null});lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
+function removeRow(i){if(!isAdmin)return;rows.splice(i,1);lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
+function updateField(i,field,val){if(!isAdmin)return;rows[i][field]=(field==='name'||field==='store')?val:(parseFloat(val)||0);lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
+function clearAll(){if(!isAdmin){alert('Login admin terlebih dahulu.');return;}if(!confirm('Hapus semua data ranking dari server pusat?'))return;rows=[];lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
+function computeStoreExtremes(withTotalRows){
+  const map = {};
+  withTotalRows.forEach(r=>{
+    const s = r.store || '(Tanpa Store)';
+    if(!map[s]) map[s] = {sum:0,count:0};
+    map[s].sum += r.total; map[s].count++;
+  });
+  const list = Object.keys(map).map(s=>({store:s, avg:map[s].sum/map[s].count}));
+  if(list.length===0) return {bestStore:null,bestAvg:null,worstStore:null,worstAvg:null};
+  list.sort((a,b)=>b.avg-a.avg);
+  const best = list[0], worst = list[list.length-1];
+  return {bestStore:best.store, bestAvg:Math.round(best.avg*100)/100, worstStore:worst.store, worstAvg:Math.round(worst.avg*100)/100};
+}
+function fingerprintFromRows(list){
+  return list.map(r=>`${r.name}|${Number(r.total).toFixed(2)}|${r.store||''}`).sort().join(';');
+}
+const HISTORY_OPTIONAL_FIELDS = ['rows_snapshot','file_name','uploaded_by','best_store','best_store_avg','worst_store','worst_store_avg'];
+async function insertHistoryWithFallback(item){
+  let payload = {...item};
+  const missingFields = [];
+  while(true){
+    const {error} = await sb.from('rank_history').insert(payload);
+    if(!error) return {ok:true, missingFields};
+    const msg = (error.message||'').toLowerCase();
+    const found = HISTORY_OPTIONAL_FIELDS.find(f=>Object.prototype.hasOwnProperty.call(payload,f) && msg.includes(f.toLowerCase()));
+    if(found){ delete payload[found]; missingFields.push(found); continue; }
+    return {ok:false, message:error.message};
+  }
+}
+async function createSnapshotEntry(label, meta={}){
+  const wt=rows.map(r=>({...r,total:calcTotal(r)}));
+  const avg=wt.reduce((s,r)=>s+r.total,0)/wt.length;
+  const sorted=[...wt].sort((a,b)=>b.total-a.total);
+  const rowsSnapshot=sorted.map((r,i)=>({name:r.name,total:Math.round(r.total*100)/100,grade:calcGrade(r.total),store:r.store||'',rank:i+1}));
+  const extremes = computeStoreExtremes(wt);
+  const item={
+    label,date:new Date().toISOString(),avg:Math.round(avg*100)/100,
+    top:sorted[0]?.name||'-',top_pt:sorted[0]?.total||0,
+    bottom:sorted[sorted.length-1]?.name||'-',bottom_pt:sorted[sorted.length-1]?.total||0,
+    count:rows.length,rows_snapshot:rowsSnapshot,
+    file_name: meta.fileName || null,
+    uploaded_by: meta.uploadedBy || currentUser?.email || 'Admin',
+    best_store: extremes.bestStore, best_store_avg: extremes.bestAvg,
+    worst_store: extremes.worstStore, worst_store_avg: extremes.worstAvg
+  };
+  const result = await insertHistoryWithFallback(item);
+  if(!result.ok) return {ok:false, message:result.message};
+  return {ok:true, noDetail: result.missingFields.includes('rows_snapshot'), missingFields: result.missingFields};
+}
+async function afterSnapshotSaved(){
+  await loadHistory();
+  renderYesterdayToday();
+  renderMoversPanel();
+  renderAlerts(rows.map(r=>({...r,total:calcTotal(r)})), [...rows].sort((a,b)=>calcTotal(b)-calcTotal(a)));
+}
+async function saveSnapshot(){
+  if(!isAdmin){alert('Login sebagai admin terlebih dahulu.');return;}if(rows.length===0){alert('Belum ada data untuk disimpan.');return;}
+  const label=prompt('Nama snapshot (contoh: 28 Agu 2026)',new Date().toLocaleDateString('id-ID'));if(label===null)return;
+  const result=await createSnapshotEntry(label);
+  if(!result.ok){alert('Gagal menyimpan snapshot: '+result.message);return;}
+  await afterSnapshotSaved();
+  if(result.missingFields && result.missingFields.length){
+    const alterStatements = result.missingFields.map(f=>{
+      const type = f==='rows_snapshot' ? 'jsonb' : (f.includes('_avg') ? 'numeric' : 'text');
+      return `ALTER TABLE rank_history ADD COLUMN IF NOT EXISTS ${f} ${type};`;
+    }).join('\n');
+    alert('Snapshot tersimpan, tapi beberapa kolom tambahan belum ada di database sehingga detail tidak lengkap: '+result.missingFields.join(', ')+'.\n\nJalankan ini di Supabase SQL Editor agar lengkap:\n\n'+alterStatements);
+  } else {
+    alert('Snapshot tersimpan di server pusat.');
+  }
+}
+
+function render(){
+  const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
+  const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
+  const n = rows.length;
+
+  document.getElementById('rowCount').textContent = n;
+  document.getElementById('statCount').textContent = n;
+  const avg = n ? (withTotals.reduce((s,r)=>s+r.total,0)/n) : 0;
+  document.getElementById('statAvg').textContent = avg.toFixed(2);
+  document.getElementById('statGood').textContent = withTotals.filter(r=>calcGrade(r.total)==='Good').length;
+  document.getElementById('statPerfect').textContent = withTotals.filter(r=>calcGrade(r.total)==='Perfect').length;
+  document.getElementById('statNeedImprove').textContent = withTotals.filter(r=>calcGrade(r.total)==='Need Improve').length;
+  document.getElementById('statBad2').textContent = withTotals.filter(r=>calcGrade(r.total)==='Bad').length;
+  document.getElementById('statPoor').textContent = withTotals.filter(r=>calcGrade(r.total)==='Poor').length;
+  const pctOf = c => n ? ((c/n)*100).toFixed(1)+'% dari total ERO' : '0%';
+  document.getElementById('pctPerfect').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Perfect').length);
+  document.getElementById('pctGood').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Good').length);
+  document.getElementById('pctNeedImprove').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Need Improve').length);
+  document.getElementById('pctBad').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Bad').length);
+  document.getElementById('pctPoor').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Poor').length);
+  document.getElementById('lastUpdate').textContent = lastUpdateLabel ? ('Update terakhir: ' + lastUpdateLabel) : '';
+
+  const podium = document.getElementById('podium');
+  if(sorted.length===0){ podium.innerHTML = '<div class="empty"><i class="ti ti-trophy"></i>Belum ada data.</div>'; }
+  else {
+    const top3 = sorted.slice(0,3);
+    const cls = ['p1','p2','p3']; const bar = ['b1','b2','b3']; const rankNum = [1,2,3];
+    podium.innerHTML = top3.map((r,i)=>`
+      <div class="podium-card ${cls[i]}">
+        <div class="avatar">${initials(r.name)}<div class="rank-badge">${rankNum[i]}</div></div>
+        <div class="podium-bar ${bar[i]}"><div class="pt">${r.total.toFixed(2)}</div></div>
+        <div class="podium-name">${escapeHtml(r.name)}</div>
+        <div class="podium-store">${escapeHtml(r.store||'')}</div>
+      </div>`).join('');
+  }
+
+  const lb = document.getElementById('leaderboard');
+  if(sorted.length===0){ lb.innerHTML = '<div class="empty"><i class="ti ti-list-details"></i>Belum ada data.</div>'; }
+  else {
+    const maxPt = Math.max(...sorted.map(r=>r.total), 8);
+    lb.innerHTML = sorted.map((r,i)=>{
+      const gc = gradeClass(calcGrade(r.total));
+      const pct = Math.max(6, (r.total/maxPt)*100);
+      return `<div class="leaderboard-row">
+        <div class="lb-rank">${i+1}</div>
+        <div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"><span class="nm clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</span></div></div>
+        <div>${rankDeltaHtml(r.prevRank, i+1)}</div>
+        <div class="lb-pt">${r.total.toFixed(2)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const watch = document.getElementById('watchlist');
+  if(sorted.length===0){ watch.innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i>Belum ada data.</div>'; }
+  else {
+    const bottom3 = sorted.slice(-3).reverse();
+    watch.innerHTML = bottom3.map(r=>{
+      const g = calcGrade(r.total);
+      return `<div class="watch-row">
+        <div class="watch-left"><i class="ti ti-alert-triangle"></i><div><div class="watch-name">${escapeHtml(r.name)}</div><div class="watch-store">${escapeHtml(r.store||'')}</div><div class="watch-grade">${g}</div></div></div>
+        <div class="watch-pt">${r.total.toFixed(2)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const storeMap = {};
+  withTotals.forEach(r=>{
+    const s = r.store || '(Tanpa Store)';
+    if(!storeMap[s]) storeMap[s] = { count:0, sum:0, Perfect:0, Good:0, ['Need Improve']:0, Bad:0, Poor:0 };
+    storeMap[s].count++; storeMap[s].sum += r.total;
+    storeMap[s][calcGrade(r.total)]++;
+  });
+  const storeRows = Object.keys(storeMap).map(s=>({ store:s, count:storeMap[s].count, avg: storeMap[s].sum/storeMap[s].count, ...storeMap[s] }));
+  storeRows.sort((a,b)=>a.avg-b.avg);
+  const storeTbody = document.getElementById('storeTableBody');
+  if(storeTbody){
+    if(storeRows.length===0){ storeTbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="ti ti-building-store"></i>Belum ada data.</td></tr>'; }
+    else {
+      storeTbody.innerHTML = storeRows.map((s,i)=>`
+        <tr class="${i===0?'store-worst':''}">
+          <td class="name">${escapeHtml(s.store)}</td>
+          <td>${s.count}</td>
+          <td><b>${s.avg.toFixed(2)}</b></td>
+          <td>${s.Perfect}</td>
+          <td>${s.Good}</td>
+          <td>${s['Need Improve']}</td>
+          <td>${s.Bad}</td>
+          <td>${s.Poor}</td>
+        </tr>`).join('');
+    }
+  }
+
+  const tbody = document.getElementById('tableBody');
+  const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
+  populateStoreOptions(ranked);
+  const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade) && (!searchName || r.name.toLowerCase().includes(searchName))); 
+  const countEl = document.getElementById('filterCount');
+  if(countEl) countEl.textContent = (filterStore||filterGrade||searchName) ? `Menampilkan ${filtered.length} dari ${n} orang` : '';
+  tbody.innerHTML = filtered.map(r=>{
+    const grade = calcGrade(r.total);
+    const gc = gradeClass(grade);
+    const delta = rankDeltaHtml(r.prevRank, r.rank);
+    if(isAdmin){
+      return `<tr>
+        <td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td>
+        ${fields.map(f=>`<td><input type="number" step="0.1" value="${r[f]}" onchange="updateField(${r.idx},'${f}',this.value)"></td>`).join('')}
+        <td><b>${r.total.toFixed(2)}</b></td>
+        <td><span class="grade ${gc}">${grade}</span></td>
+        <td>${delta}</td>
+        <td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td>
+        <td>
+          <button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat tren"><i class="ti ti-chart-line"></i></button>
+          <button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button>
+        </td>
+      </tr>`;
+    }
+    return `<tr>
+      <td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td>
+      ${fields.map(f=>`<td class="readonly-val">${(parseFloat(r[f])||0).toFixed(2)}</td>`).join('')}
+      <td><b>${r.total.toFixed(2)}</b></td>
+      <td><span class="grade ${gc}">${grade}</span></td>
+      <td>${delta}</td>
+      <td class="readonly-val">${escapeHtml(r.store||'')}</td>
+      <td></td>
+    </tr>`;
+  }).join('');
+  renderStoreCompareControls();
+  renderYesterdayToday();
+  renderStoreScore(storeRows);
+  renderMoversPanel();
+  renderAlerts(withTotals, sorted);
+  renderMobileLeader(withTotals);
+}
+
+function buildSparkline(values){
+  if(values.length < 2) return '';
+  const w = 600, h = 60, pad = 6;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const stepX = (w - pad*2) / (values.length - 1);
+  const pts = values.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - ((v-min)/range)*(h-pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = values[values.length-1] >= values[0] ? '#059669' : '#DC2626';
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${last}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="${i===pts.length-1?4:2.5}" fill="${last}"/>`).join('')}
+  </svg>`;
+}
+function exportExcel(){
+  const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
+  const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
+  const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
+  const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade) && (!searchName || r.name.toLowerCase().includes(searchName))); 
+  if(filtered.length===0){ alert('Tidak ada data untuk diexport.'); return; }
+  const data = filtered.map(r=>({
+    Rank: r.rank, Nama: r.name, Device: r.device, Acc: r.acc, Operator: r.operator,
+    Boltech: r.boltech, ['AR Acc']: r.arAcc, ['AR Boltech']: r.arBoltech,
+    ['Total Point']: Math.round(r.total*100)/100, Grade: calcGrade(r.total), Store: r.store||''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Big Malang 2');
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `BigMalang2-Laporan-${dateStr}.xlsx`);
+}
+
+function buildLineChartSvg(labels, series, opts={}){
+  const w = 640, h = 220, padL = 34, padR = 12, padT = 14, padB = 34;
+  const allVals = series.flatMap(s=>s.values.filter(v=>v!==null && v!==undefined));
+  if(allVals.length===0) return '<div class="empty">Belum ada data untuk ditampilkan.</div>';
+  const min = Math.min(0, Math.min(...allVals));
+  const max = Math.max(...allVals) * 1.1 || 10;
+  const stepX = (w - padL - padR) / Math.max(1, labels.length - 1);
+  const xAt = i => padL + i*stepX;
+  const yAt = v => padT + (h - padT - padB) * (1 - (v - min) / ((max - min) || 1));
+
+  const gridLines = [0,0.25,0.5,0.75,1].map(t=>{
+    const y = padT + (h-padT-padB)*t;
+    const val = (max - (max-min)*t);
+    return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#EEF2F7" stroke-width="1"/><text x="4" y="${y+3}" font-size="9" fill="#94A3B8">${val.toFixed(1)}</text>`;
+  }).join('');
+
+  const xLabels = labels.map((l,i)=>{
+    if(labels.length>8 && i%Math.ceil(labels.length/8)!==0 && i!==labels.length-1) return '';
+    return `<text x="${xAt(i)}" y="${h-10}" font-size="9" fill="#94A3B8" text-anchor="middle">${escapeHtml(String(l).slice(0,8))}</text>`;
+  }).join('');
+
+  const paths = series.map(s=>{
+    let segments = [], current = [];
+    s.values.forEach((v,i)=>{
+      if(v===null || v===undefined){ if(current.length){ segments.push(current); current=[]; } return; }
+      current.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`);
+    });
+    if(current.length) segments.push(current);
+    const lines = segments.map(seg=>`<polyline points="${seg.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+    const dots = s.values.map((v,i)=> (v===null||v===undefined) ? '' : `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
+    return lines + dots;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${opts.height||220}px;">${gridLines}${paths}${xLabels}</svg>`;
+}
+
+let historyData = [];
+
+function getFocusRecommendation(r){
+  const labels={device:'Device',acc:'Acc',operator:'Operator',boltech:'Boltech',arAcc:'AR Acc',arBoltech:'AR Boltech'};
+  const weights={device:3,acc:3,operator:1,boltech:1,arAcc:1,arBoltech:1};
+  const weak=fields.map(f=>({field:f,value:parseFloat(r[f])||0,max:weights[f]})).sort((a,b)=>(a.value/a.max)-(b.value/b.max));
+  const w=weak[0];
+  if((w.value/w.max)>=0.8) return 'Pertahankan performa. Fokus berikutnya adalah menjaga konsistensi semua indikator.';
+  return `Fokus utama: ${labels[w.field]}. Pencapaian ${w.value.toFixed(1)} dari ${w.max}. Prioritaskan coaching dan pendampingan pada indikator ini.`;
+}
+function openPersonModal(name){
+  if(!name) return;
+  const current = rows.find(r=>r.name===name);
+  document.getElementById('personModalName').textContent = name;
+  document.getElementById('personModalStore').textContent = current ? (current.store||'-') : '-';
+  const chrono = [...historyData].reverse();
+  const points = [];
+  chrono.forEach(h=>{
+    if(!h.rows_snapshot) return;
+    const match = h.rows_snapshot.find(r=>r.name===name);
+    if(match) points.push({label:h.label,total:match.total,grade:match.grade});
+  });
+  const chartEl=document.getElementById('personModalChart'), listEl=document.getElementById('personModalList');
+  if(current){
+    const labels={device:'Device',acc:'Acc',operator:'Operator',boltech:'Boltech',arAcc:'AR Acc',arBoltech:'AR Boltech'};
+    const maxes={device:3,acc:3,operator:1,boltech:1,arAcc:1,arBoltech:1};
+    const total=calcTotal(current), grade=calcGrade(total), focus=getFocusRecommendation(current);
+    const rank=[...rows].sort((a,b)=>calcTotal(b)-calcTotal(a)).findIndex(r=>r.name===name)+1;
+    const breakdown=`<div class="modal-breakdown">${fields.map(f=>`<div class="break-row"><span>${labels[f]}</span><div class="break-track"><div class="break-fill" style="width:${Math.min(100,((parseFloat(current[f])||0)/maxes[f])*100)}%"></div></div><b>${(parseFloat(current[f])||0).toFixed(1)}/${maxes[f]}</b></div>`).join('')}</div>`;
+    const kpis=`<div class="modal-kpis"><div class="modal-kpi"><b>${total.toFixed(2)}</b><span>Total</span></div><div class="modal-kpi"><b>#${rank}</b><span>Ranking</span></div><div class="modal-kpi"><b>${grade}</b><span>Grade</span></div></div>`;
+    const focusBox=`<div class="focus-box"><b>Rekomendasi fokus utama</b><div>${escapeHtml(focus)}</div></div>`;
+    chartEl.innerHTML=kpis+breakdown+focusBox+(points.length>=2?buildLineChartSvg(points.map(p=>p.label),[{name, color:'#CA8A04', values:points.map(p=>p.total)}],{height:200}):'');
+  } else chartEl.innerHTML='';
+  if(points.length===0) listEl.innerHTML='<div class="empty"><i class="ti ti-chart-line"></i>Belum ada data histori untuk orang ini.</div>';
+  else listEl.innerHTML=[...points].reverse().map(p=>`<div class="modal-list-item"><span>${escapeHtml(p.label)}</span><span><b>${p.total.toFixed(2)}</b> · ${p.grade}</span></div>`).join('');
+  document.getElementById('personModal').style.display='flex';
+}
+function closePersonModal(){ document.getElementById('personModal').style.display = 'none'; }
+
+const STORE_COMPARE_COLORS = ['#2563EB','#059669','#F59E0B','#DC2626','#7C3AED'];
+let selectedCompareStores = [];
+
+function renderStoreCompareControls(){
+  const controlsEl = document.getElementById('storeCompareControls');
+  if(!controlsEl) return;
+  const allStores = [...new Set(rows.map(r=>r.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  if(selectedCompareStores.length===0){
+    const countByStore = {};
+    rows.forEach(r=>{ if(r.store) countByStore[r.store]=(countByStore[r.store]||0)+1; });
+    selectedCompareStores = allStores.slice().sort((a,b)=>(countByStore[b]||0)-(countByStore[a]||0)).slice(0,3);
+  }
+  controlsEl.innerHTML = allStores.map(s=>{
+    const active = selectedCompareStores.includes(s);
+    return `<span class="store-chip ${active?'active':''}" data-store="${escapeAttr(s)}" onclick="toggleCompareStore(this.dataset.store)">${escapeHtml(s)}</span>`;
+  }).join('');
+  renderStoreCompareChart();
+}
+function toggleCompareStore(store){
+  const idx = selectedCompareStores.indexOf(store);
+  if(idx>-1){ selectedCompareStores.splice(idx,1); }
+  else {
+    if(selectedCompareStores.length>=5){ alert('Maksimal 5 store untuk dibandingkan sekaligus.'); return; }
+    selectedCompareStores.push(store);
+  }
+  renderStoreCompareControls();
+}
+function renderStoreCompareChart(){
+  const chartEl = document.getElementById('storeCompareChart');
+  if(!chartEl) return;
+  const snaps = [...getFilteredHistory()].reverse().filter(h=>h.rows_snapshot && h.rows_snapshot.length);
+  if(snaps.length < 2 || selectedCompareStores.length===0){
+    chartEl.innerHTML = '<div class="empty"><i class="ti ti-chart-line"></i>Perlu minimal 2 snapshot dengan detail data (dan minimal 1 store dipilih) untuk membandingkan tren.</div>';
+    return;
+  }
+  const series = selectedCompareStores.map((store,i)=>{
+    const values = snaps.map(h=>{
+      const matches = h.rows_snapshot.filter(r=>r.store===store);
+      if(!matches.length) return null;
+      return matches.reduce((s,r)=>s+r.total,0)/matches.length;
+    });
+    return { name: store, color: STORE_COMPARE_COLORS[i % STORE_COMPARE_COLORS.length], values };
+  });
+  const chartHtml = buildLineChartSvg(snaps.map(h=>h.label), series, {height:260});
+  const legendHtml = `<div class="store-compare-legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${escapeHtml(s.name)}</span>`).join('')}</div>`;
+  chartEl.innerHTML = chartHtml + legendHtml;
+}
+
+function gradeCountsChips(rowsSnap){
+  if(!rowsSnap || !rowsSnap.length) return '';
+  const order = ['Perfect','Good','Need Improve','Bad','Poor'];
+  const colors = {Perfect:'#059669',Good:'#84CC16',['Need Improve']:'#F59E0B',Bad:'#F97316',Poor:'#DC2626'};
+  const textColors = {Perfect:'#FFFFFF',Good:'#1A2E05',['Need Improve']:'#3B2504',Bad:'#FFFFFF',Poor:'#FFFFFF'};
+  const counts = {}; order.forEach(g=>counts[g]=0);
+  rowsSnap.forEach(r=>{ if(counts[r.grade]!==undefined) counts[r.grade]++; });
+  return `<div class="snap-grade-row">` + order.map(g=>`<span class="snap-grade-chip" style="background:${colors[g]};color:${textColors[g]}">${g}: ${counts[g]}</span>`).join('') + `</div>`;
+}
+function moversHtml(currentSnap, prevSnap){
+  if(!currentSnap || !prevSnap || !currentSnap.length || !prevSnap.length){
+    return '<div class="snap-nodetail">Data pembanding belum tersedia untuk snapshot sebelumnya.</div>';
+  }
+  const prevRankMap = {}; prevSnap.forEach(r=>{ prevRankMap[r.name] = r.rank; });
+  let gainer=null, dropper=null;
+  currentSnap.forEach(r=>{
+    if(!Object.prototype.hasOwnProperty.call(prevRankMap, r.name)) return;
+    const delta = prevRankMap[r.name] - r.rank;
+    if(delta > 0 && (!gainer || delta > gainer.delta)) gainer = {name:r.name, delta};
+    if(delta < 0 && (!dropper || delta < dropper.delta)) dropper = {name:r.name, delta};
+  });
+  return `<div class="snap-movers">
+    <div class="snap-mover-card gain"><div class="mv-lbl">Top Gainer</div><div class="mv-name">${gainer?escapeHtml(gainer.name):'–'}</div><div class="mv-delta">${gainer?('▲ naik '+gainer.delta+' peringkat'):'Tidak ada perubahan naik'}</div></div>
+    <div class="snap-mover-card drop"><div class="mv-lbl">Top Dropper</div><div class="mv-name">${dropper?escapeHtml(dropper.name):'–'}</div><div class="mv-delta">${dropper?('▼ turun '+Math.abs(dropper.delta)+' peringkat'):'Tidak ada perubahan turun'}</div></div>
+  </div>`;
+}
+
+function getFilteredHistory(){
+  let h=[...historyData];
+  if(dateFrom){const d=new Date(dateFrom+'T00:00:00'); h=h.filter(x=>new Date(x.date)>=d);}
+  if(dateTo){const d=new Date(dateTo+'T23:59:59'); h=h.filter(x=>new Date(x.date)<=d);}
+  return h;
+}
+function applyDateFilter(){ dateFrom=document.getElementById('dateFrom')?.value||''; dateTo=document.getElementById('dateTo')?.value||''; filteredHistoryData=getFilteredHistory(); renderHistory(filteredHistoryData); renderStoreCompareChart(); renderYesterdayToday(); renderMoversPanel(); }
+function setDateRange(days){const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1); document.getElementById('dateFrom').value=start.toISOString().slice(0,10); document.getElementById('dateTo').value=end.toISOString().slice(0,10); applyDateFilter();}
+function clearDateFilter(){dateFrom='';dateTo='';document.getElementById('dateFrom').value='';document.getElementById('dateTo').value='';applyDateFilter();}
+function renderYesterdayToday(){
+  const el=document.getElementById('yesterdayToday'); if(!el)return;
+  const h=getFilteredHistory();
+  if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan untuk perbandingan.</div>';return;}
+  const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2], cur=chrono[chrono.length-1]; const d=cur.avg-prev.avg; const pct=prev.avg?d/prev.avg*100:0;
+  const curMap={};(cur.rows_snapshot||[]).forEach(r=>curMap[r.name]=r); const prevMap={};(prev.rows_snapshot||[]).forEach(r=>prevMap[r.name]=r);
+  let improved=0,declined=0;Object.keys(curMap).forEach(n=>{if(prevMap[n]){if(curMap[n].rank<prevMap[n].rank)improved++;else if(curMap[n].rank>prevMap[n].rank)declined++;}});
+  el.innerHTML=`<div class="insight-card"><h3>${escapeHtml(prev.label)}</h3><div class="big">${prev.avg.toFixed(2)}</div><div class="muted">Snapshot sebelumnya</div></div><div class="insight-card ${d>=0?'gain':'drop'}"><h3>${escapeHtml(cur.label)}</h3><div class="big">${cur.avg.toFixed(2)} ${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(2)}</div><div class="muted">${d>=0?'+':''}${pct.toFixed(1)}% · ${improved} ERO naik rank · ${declined} turun rank</div></div>`;
+}
+function renderStoreScore(storeRows){
+  const el=document.getElementById('storeScoreGrid'); if(!el)return; if(!storeRows.length){el.innerHTML='<div class="empty">Belum ada data store.</div>';return;}
+  el.innerHTML=storeRows.map(s=>{const score=Math.max(0,Math.min(100,s.avg*10)); const goodPlus=(s.Perfect+s.Good)/s.count*100; return `<div class="score-card"><div class="score-head"><div class="score-name">${escapeHtml(s.store)}</div><div class="score-value">${score.toFixed(0)}</div></div><div class="score-bar"><span style="width:${score}%"></span></div><div class="score-meta"><span>Avg ${s.avg.toFixed(2)}</span><span>Good+ ${goodPlus.toFixed(0)}%</span></div></div>`;}).join('');
+}
+function renderMoversPanel(){
+  const el=document.getElementById('moversPanel'); if(!el)return; const h=getFilteredHistory(); if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan.</div>';return;}
+  const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2],cur=chrono[chrono.length-1]; if(!prev.rows_snapshot||!cur.rows_snapshot){el.innerHTML='<div class="empty">Snapshot detail per-orang belum tersedia.</div>';return;}
+  const pm={};prev.rows_snapshot.forEach(r=>pm[r.name]=r.rank); const moves=cur.rows_snapshot.map(r=>({name:r.name,delta:(pm[r.name]??r.rank)-r.rank})).filter(r=>r.delta!==0); const gains=moves.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,3),drops=moves.filter(x=>x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,3);
+  const list=(arr,up)=>arr.length?`<div class="mover-list">${arr.map(x=>`<div class="mover-row"><span class="nm">${escapeHtml(x.name)}</span><span class="delta">${up?'▲ +':'▼ '}${up?x.delta:Math.abs(x.delta)} rank</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada perubahan.</div>';
+  el.innerHTML=`<div class="insight-card gain"><h3>📈 Most Improved</h3>${list(gains,true)}</div><div class="insight-card drop"><h3>📉 Biggest Drop</h3>${list(drops,false)}</div>`;
+}
+function renderAlerts(withTotals,sorted){
+  const el=document.getElementById('alertPanel');if(!el)return; const alerts=[]; const poor=withTotals.filter(r=>calcGrade(r.total)==='Poor'), bad=withTotals.filter(r=>calcGrade(r.total)==='Bad');
+  if(poor.length) alerts.push({c:'critical',icon:'ti-alert-triangle',t:`${poor.length} ERO berada di kategori Poor`,d:'Prioritaskan coaching dan pendampingan pada ERO dengan skor terendah.'});
+  if(bad.length) alerts.push({c:'warning',icon:'ti-alert-circle',t:`${bad.length} ERO berada di kategori Bad`,d:'Review indikator terendah dan buat action plan.'});
+  const h=getFilteredHistory(); if(h.length>=2){const ch=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const d=ch.at(-1).avg-ch.at(-2).avg;if(d<0)alerts.push({c:'critical',icon:'ti-trending-down',t:`Rata-rata turun ${Math.abs(d).toFixed(2)} poin`,d:'Bandingkan store dan ERO yang mengalami penurunan terbesar.'});else if(d>0)alerts.push({c:'good',icon:'ti-trending-up',t:`Rata-rata naik ${d.toFixed(2)} poin`,d:'Pertahankan praktik yang membuat performa meningkat.'});}
+  if(!alerts.length)alerts.push({c:'good',icon:'ti-circle-check',t:'Tidak ada alert kritis',d:'Performance saat ini tidak memunculkan kondisi yang perlu perhatian khusus.'});
+  el.innerHTML=alerts.map(a=>`<div class="alert-item ${a.c}"><i class="ti ${a.icon}"></i><div><strong>${a.t}</strong><div>${a.d}</div></div></div>`).join('');
+  const m=document.getElementById('mAlerts');if(m)m.textContent=alerts.filter(a=>a.c==='critical'||a.c==='warning').length;
+}
+function renderMobileLeader(withTotals){const m=document.getElementById('mCount');if(!m)return;document.getElementById('mCount').textContent=withTotals.length;document.getElementById('mAvg').textContent=withTotals.length?(withTotals.reduce((s,r)=>s+r.total,0)/withTotals.length).toFixed(2):'0';const h=getFilteredHistory();let imp=0;if(h.length>=2&&h.at(-1).rows_snapshot&&h.at(-2).rows_snapshot){const pm={};h.at(-2).rows_snapshot.forEach(r=>pm[r.name]=r.rank);h.at(-1).rows_snapshot.forEach(r=>{if(pm[r.name]&&r.rank<pm[r.name])imp++;});}document.getElementById('mImproved').textContent=imp;const focus=withTotals.filter(r=>calcGrade(r.total)==='Poor'||calcGrade(r.total)==='Bad').sort((a,b)=>a.total-b.total).slice(0,2);document.getElementById('mFocus').textContent=focus.length?focus.map(r=>`${r.name} (${r.total.toFixed(2)})`).join(' · '):'Tidak ada ERO kritis saat ini.';}
+function renderHistory(history){
+  filteredHistoryData = history || [];
+  const el = document.getElementById('history');
+  const summaryEl = document.getElementById('historySummary');
+  const trendEl = document.getElementById('historyTrend');
+  if(!history || history.length===0){
+    el.innerHTML = '<div class="empty"><i class="ti ti-timeline"></i>Belum ada snapshot. Klik "Simpan snapshot hari ini" untuk mulai melacak progres.</div>';
+    summaryEl.innerHTML = ''; trendEl.innerHTML = '';
+    return;
+  }
+  const chrono = [...history].reverse();
+
+  const firstAvg = chrono[0].avg, lastAvg = chrono[chrono.length-1].avg;
+  const overallDelta = Math.round((lastAvg-firstAvg)*100)/100;
+  summaryEl.innerHTML = `<div class="history-summary">
+    <div><b>${chrono.length}</b> snapshot tercatat</div>
+    <div>Rata-rata pertama: <b>${firstAvg.toFixed(2)}</b></div>
+    <div>Rata-rata terakhir: <b>${lastAvg.toFixed(2)}</b></div>
+    <div>Perubahan keseluruhan: <b style="color:${overallDelta>=0?'#15803D':'#B91C1C'}">${overallDelta>=0?'+':''}${overallDelta.toFixed(2)}</b></div>
+  </div>`;
+
+  trendEl.innerHTML = chrono.length >= 2 ? `<div class="sparkline-wrap">${buildSparkline(chrono.map(h=>h.avg))}</div>` : '';
+
+  el.innerHTML = chrono.map((h,idx)=>{
+    const prev = idx>0 ? chrono[idx-1] : null;
+    let trendHtml = '';
+    if(prev){
+      const d = Math.round((h.avg - prev.avg)*100)/100;
+      const cls = d>0?'up':d<0?'down':'same';
+      trendHtml = `<span class="snap-trend ${cls}">${d>0?'▲':d<0?'▼':'–'} ${Math.abs(d).toFixed(2)}</span>`;
+    }
+    const hasDetail = h.rows_snapshot && h.rows_snapshot.length;
+    const detailBody = hasDetail
+      ? gradeCountsChips(h.rows_snapshot) + moversHtml(h.rows_snapshot, prev?.rows_snapshot)
+      : '<div class="snap-nodetail">Snapshot ini belum menyimpan detail per-orang.</div>';
+    const metaRows = [];
+    if(h.file_name) metaRows.push(`<div class="modal-list-item"><span>File</span><span>${escapeHtml(h.file_name)}</span></div>`);
+    if(h.uploaded_by) metaRows.push(`<div class="modal-list-item"><span>Diupload oleh</span><span>${escapeHtml(h.uploaded_by)}</span></div>`);
+    if(h.best_store) metaRows.push(`<div class="modal-list-item"><span>Store terbaik</span><span>${escapeHtml(h.best_store)}${h.best_store_avg!=null?' ('+Number(h.best_store_avg).toFixed(2)+')':''}</span></div>`);
+    if(h.worst_store) metaRows.push(`<div class="modal-list-item"><span>Store terendah</span><span>${escapeHtml(h.worst_store)}${h.worst_store_avg!=null?' ('+Number(h.worst_store_avg).toFixed(2)+')':''}</span></div>`);
+    const metaBlock = metaRows.length ? `<div class="snap-meta">${metaRows.join('')}</div>` : '';
+    return `<div class="snap-item">
+      <div class="snap-top">
+        <div>
+          <div class="snap-label">${escapeHtml(h.label)}</div>
+          <div class="snap-detail"><i class="ti ti-medal" style="color:#CA8A04; vertical-align:-2px;"></i> ${escapeHtml(h.top)} (${h.top_pt.toFixed(2)}) &nbsp;&middot;&nbsp; <i class="ti ti-alert-triangle" style="color:#DC2626; vertical-align:-2px;"></i> ${escapeHtml(h.bottom)} (${h.bottom_pt.toFixed(2)})</div>
+        </div>
+        <div class="snap-avg-wrap">
+          ${trendHtml}
+          <div class="snap-avg">${h.avg.toFixed(2)}</div>
+        </div>
+      </div>
+      <details>
+        <summary class="snap-toggle">Lihat detail (${h.count} orang)</summary>
+        <div class="snap-body">${metaBlock}${detailBody}</div>
+      </details>
+    </div>`;
+  }).join('');
+}
+
+async function loadHistory(){
+  if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
+  const {data,error}=await sb.from('rank_history').select('*').order('date',{ascending:false}).limit(100);
+  if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
+  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+function unlockView(){
+  document.body.classList.remove('gated');
+}
+async function submitViewGate(){
+  if(!SUPABASE_READY){ document.getElementById('viewGateError').textContent='Supabase belum dikonfigurasi.'; document.getElementById('viewGateError').style.display='block'; return; }
+  const email = document.getElementById('viewGateEmail').value.trim();
+  const password = document.getElementById('viewGatePassword').value;
+  const errEl = document.getElementById('viewGateError');
+  const btn = document.getElementById('viewGateSubmit');
+  if(!email || !password){ errEl.textContent='Email dan password wajib diisi.'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Memproses...';
+  const {data,error} = await sb.auth.signInWithPassword({email,password});
+  btn.disabled = false; btn.textContent = 'Masuk';
+  if(error){ errEl.textContent = 'Login gagal: '+error.message; errEl.style.display='block'; return; }
+  currentUser = data.user; isAdmin = isAdminFromUser(currentUser);
+  unlockView();
+  bootApp();
+}
+let appBooted = false;
+async function bootApp(){
+  if(appBooted) return; appBooted = true;
+  await loadAdminState();
+  if(SUPABASE_READY){sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;isAdmin=isAdminFromUser(currentUser);updateAdminUI();render();});}
+  await loadData();await loadHistory();
+  if(SUPABASE_READY)setInterval(async()=>{if(!document.hidden&&!isAdmin)await loadData();},30000);
+}
+(async function initGate(){
+  if(!SUPABASE_READY){ unlockView(); bootApp(); return; }
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){ currentUser = session.user; isAdmin = isAdminFromUser(currentUser); unlockView(); bootApp(); }
+})();
+</script>
+</body>
+</html>
