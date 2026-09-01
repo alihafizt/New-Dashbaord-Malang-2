@@ -38,6 +38,47 @@
 
   .wrap { max-width: 1600px; width: 96%; margin: 0 auto; }
 
+  /* App Shell: sidebar navigation + content */
+  .app-shell { display: flex; gap: 24px; align-items: flex-start; }
+  .app-sidebar {
+    flex: 0 0 224px; position: sticky; top: 24px; align-self: flex-start;
+    background: var(--panel-bg); border-radius: 20px; padding: 18px 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(226, 232, 240, 0.6);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 10px; padding: 6px 10px 16px;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15.5px;
+    color: #0F172A; border-bottom: 1px dashed var(--border-light); margin-bottom: 8px;
+  }
+  .sidebar-brand i { color: var(--brand); font-size: 19px; background: #FEF3C7; padding: 8px; border-radius: 10px; }
+  .app-sidebar nav { display: flex; flex-direction: column; gap: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    padding: 11px 14px; border-radius: 12px; border: 1px solid transparent; background: transparent;
+    box-shadow: none; color: var(--text-muted); font-weight: 600; font-size: 13.5px;
+  }
+  .nav-item i { font-size: 17px; width: 18px; text-align: center; }
+  .nav-item:hover { background: #F8FAFC; color: var(--text-main); border-color: transparent; transform: none; }
+  .nav-item.active { background: #FFFBEB; color: #92400E; border-color: #FDE68A; }
+  .nav-item.active i { color: var(--brand); }
+  .app-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+
+  .view-section { display: none; flex-direction: column; gap: 24px; }
+  .view-section.active { display: flex; }
+
+  .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; }
+  .dashboard-grid-full { grid-column: 1 / -1; }
+  @media(max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+  @media(max-width: 900px) {
+    .app-shell { flex-direction: column; }
+    .app-sidebar { position: static; flex-direction: row; overflow-x: auto; width: 100%; gap: 6px; padding: 10px; }
+    .app-sidebar nav { flex-direction: row; gap: 6px; }
+    .sidebar-brand { display: none; }
+    .nav-item { flex: 0 0 auto; white-space: nowrap; }
+  }
+
   /* Hero Section */
   .hero { 
     display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; 
@@ -237,8 +278,10 @@
   .insight-card.drop { background: #FEF2F2; border-color: #FECACA; }
   
   .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .score-card { border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s; }
-  .score-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+  .score-card { border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s; cursor: pointer; }
+  .score-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.05); border-color: var(--brand); }
+  .score-name.clickable-name:hover { color: var(--brand); }
+  .score-hint { font-size: 10.5px; color: #94A3B8; margin-top: 10px; display: flex; align-items: center; gap: 4px; font-weight: 500; }
   .score-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
   .score-name { font-weight: 700; font-size: 13.5px; line-height: 1.4; } 
   .score-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 22px; color: var(--brand); }
@@ -355,7 +398,9 @@
   body.gated #viewGate { display: flex; }
 
   @media print {
-    .dashboard-layout { display: block; }
+    .app-sidebar { display: none !important; }
+    .view-section { display: block !important; }
+    .dashboard-grid { display: block; }
     .panel { break-inside: avoid; box-shadow: none; border: 1px solid #000; margin-bottom: 20px; }
     #adminPanel, .toolbar, .filter-bar, .hero-right, .upload-status { display: none !important; }
     .table-scroll, .history-scroll { max-height: none !important; overflow: visible !important; }
@@ -377,6 +422,22 @@
 </div>
 
 <div class="wrap">
+<div class="app-shell">
+
+  <!-- Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="sidebar-brand"><i class="ti ti-trophy"></i><span>Big Malang 2</span></div>
+    <nav>
+      <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+      <button class="nav-item" data-view="eros" onclick="switchView('eros')"><i class="ti ti-users"></i>Data ERO</button>
+      <button class="nav-item" data-view="stores" onclick="switchView('stores')"><i class="ti ti-building-store"></i>Data Toko</button>
+      <button class="nav-item" data-view="reports" onclick="switchView('reports')"><i class="ti ti-report"></i>Report</button>
+      <button class="nav-item" data-view="settings" id="navSettings" style="display:none;" onclick="switchView('settings')"><i class="ti ti-settings"></i>Kelola Data</button>
+    </nav>
+  </aside>
+
+  <div class="app-content">
+
   <!-- Header -->
   <div class="hero">
     <div class="hero-left">
@@ -389,42 +450,41 @@
     </div>
   </div>
 
-  <!-- Top Overview Metrics -->
-  <div class="top-metrics-grid">
-    <div class="stats">
-      <div class="stat-card"><div class="lbl"><i class="ti ti-users"></i>ERO</div><div class="val" id="statCount">0</div></div>
-      <div class="stat-card"><div class="lbl"><i class="ti ti-chart-bar"></i>Rata-rata Poin</div><div class="val" id="statAvg">0</div><div class="upd" id="lastUpdate"></div></div>
-    </div>
-    <div class="grade-stats">
-      <div class="stat-card perfect"><div class="lbl"><i class="ti ti-crown"></i>Perfect</div><div class="val" id="statPerfect">0</div><div class="pct" id="pctPerfect">0%</div></div>
-      <div class="stat-card good"><div class="lbl"><i class="ti ti-star"></i>Good</div><div class="val" id="statGood">0</div><div class="pct" id="pctGood">0%</div></div>
-      <div class="stat-card needimprove"><div class="lbl"><i class="ti ti-trending-up"></i>Need Improve</div><div class="val" id="statNeedImprove">0</div><div class="pct" id="pctNeedImprove">0%</div></div>
-      <div class="stat-card bad"><div class="lbl"><i class="ti ti-alert-circle"></i>Bad</div><div class="val" id="statBad2">0</div><div class="pct" id="pctBad">0%</div></div>
-      <div class="stat-card poor"><div class="lbl"><i class="ti ti-alert-triangle"></i>Poor</div><div class="val" id="statPoor">0</div><div class="pct" id="pctPoor">0%</div></div>
-    </div>
-  </div>
+  <!-- DASHBOARD VIEW -->
+  <div class="view-section active" data-view-section="dashboard">
 
-  <div class="panel mobile-leader">
-    <h2><i class="ti ti-device-mobile"></i>Mobile Leader View</h2>
-    <div class="mobile-grid">
-      <div class="mobile-kpi"><div class="k">ERO</div><div class="v" id="mCount">0</div></div>
-      <div class="mobile-kpi"><div class="k">Rata-rata</div><div class="v" id="mAvg">0</div></div>
-      <div class="mobile-kpi"><div class="k">Improved</div><div class="v" id="mImproved">0</div></div>
-      <div class="mobile-kpi"><div class="k">Alert</div><div class="v" id="mAlerts">0</div></div>
+    <!-- Top Overview Metrics -->
+    <div class="top-metrics-grid">
+      <div class="stats">
+        <div class="stat-card"><div class="lbl"><i class="ti ti-users"></i>ERO</div><div class="val" id="statCount">0</div></div>
+        <div class="stat-card"><div class="lbl"><i class="ti ti-chart-bar"></i>Rata-rata Poin</div><div class="val" id="statAvg">0</div><div class="upd" id="lastUpdate"></div></div>
+      </div>
+      <div class="grade-stats">
+        <div class="stat-card perfect"><div class="lbl"><i class="ti ti-crown"></i>Perfect</div><div class="val" id="statPerfect">0</div><div class="pct" id="pctPerfect">0%</div></div>
+        <div class="stat-card good"><div class="lbl"><i class="ti ti-star"></i>Good</div><div class="val" id="statGood">0</div><div class="pct" id="pctGood">0%</div></div>
+        <div class="stat-card needimprove"><div class="lbl"><i class="ti ti-trending-up"></i>Need Improve</div><div class="val" id="statNeedImprove">0</div><div class="pct" id="pctNeedImprove">0%</div></div>
+        <div class="stat-card bad"><div class="lbl"><i class="ti ti-alert-circle"></i>Bad</div><div class="val" id="statBad2">0</div><div class="pct" id="pctBad">0%</div></div>
+        <div class="stat-card poor"><div class="lbl"><i class="ti ti-alert-triangle"></i>Poor</div><div class="val" id="statPoor">0</div><div class="pct" id="pctPoor">0%</div></div>
+      </div>
     </div>
-    <div class="focus-box"><b>Fokus hari ini</b><div id="mFocus">Memuat prioritas...</div></div>
-  </div>
 
-  <!-- Main Grid Layout for Desktop -->
-  <div class="dashboard-layout">
-    
-    <!-- Left Sidebar Column -->
-    <div class="dashboard-sidebar">
+    <div class="panel mobile-leader">
+      <h2><i class="ti ti-device-mobile"></i>Mobile Leader View</h2>
+      <div class="mobile-grid">
+        <div class="mobile-kpi"><div class="k">ERO</div><div class="v" id="mCount">0</div></div>
+        <div class="mobile-kpi"><div class="k">Rata-rata</div><div class="v" id="mAvg">0</div></div>
+        <div class="mobile-kpi"><div class="k">Improved</div><div class="v" id="mImproved">0</div></div>
+        <div class="mobile-kpi"><div class="k">Alert</div><div class="v" id="mAlerts">0</div></div>
+      </div>
+      <div class="focus-box"><b>Fokus hari ini</b><div id="mFocus">Memuat prioritas...</div></div>
+    </div>
+
+    <div class="dashboard-grid">
       <div class="panel">
         <h2><i class="ti ti-medal"></i>Top 3</h2>
         <div id="podium" class="podium"></div>
       </div>
-      
+
       <div class="panel">
         <h2><i class="ti ti-bell"></i>Alert Otomatis</h2>
         <div id="alertPanel" class="alert-list"></div>
@@ -440,20 +500,21 @@
         <div id="yesterdayToday" class="insight-grid"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel dashboard-grid-full">
         <h2><i class="ti ti-arrows-up-down"></i>Most Improved &amp; Biggest Drop</h2>
         <div id="moversPanel" class="insight-grid"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel dashboard-grid-full">
         <h2><i class="ti ti-list-details"></i>Papan Peringkat Lengkap</h2>
         <div id="leaderboard"></div>
       </div>
     </div>
+  </div>
+  <!-- /DASHBOARD VIEW -->
 
-    <!-- Right Main Column -->
-    <div class="dashboard-main">
-      
+  <!-- SETTINGS VIEW (kelola data, admin only) -->
+  <div class="view-section" data-view-section="settings">
       <div class="panel" id="adminPanel" style="display:none;">
         <h2><i class="ti ti-upload"></i>Update Data Harian</h2>
         <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
@@ -476,7 +537,11 @@
           </div>
         </details>
       </div>
+  </div>
+  <!-- /SETTINGS VIEW -->
 
+  <!-- EROS VIEW -->
+  <div class="view-section" data-view-section="eros">
       <div class="panel">
         <h2><i class="ti ti-table"></i>Semua Data (<span id="rowCount">0</span> orang)</h2>
         <div class="filter-bar">
@@ -516,16 +581,20 @@
           </table>
         </div>
       </div>
+  </div>
+  <!-- /EROS VIEW -->
 
+  <!-- STORES VIEW -->
+  <div class="view-section" data-view-section="stores">
       <div class="panel">
         <h2><i class="ti ti-building-store"></i>Store Performance Score</h2>
-        <div class="sub" style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Skor store dihitung dari rata-rata poin saat ini (maksimum 10 = 100).</div>
+        <div class="sub" style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Skor store dihitung dari rata-rata poin saat ini (maksimum 10 = 100). Klik salah satu toko untuk melihat daftar ERO dan poinnya.</div>
         <div id="storeScoreGrid" class="score-grid"></div>
       </div>
 
       <div class="panel">
         <h2><i class="ti ti-building-store"></i>Ringkasan per Store</h2>
-        <div class="sub" style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Diurutkan dari rata-rata poin terendah — toko yang paling perlu dibantu tampil paling atas.</div>
+        <div class="sub" style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Diurutkan dari rata-rata poin terendah — toko yang paling perlu dibantu tampil paling atas. Klik nama toko untuk detail ERO.</div>
         <div class="table-scroll" style="max-height: 450px;">
           <table id="storeTable">
             <thead>
@@ -537,7 +606,11 @@
           </table>
         </div>
       </div>
+  </div>
+  <!-- /STORES VIEW -->
 
+  <!-- REPORTS VIEW -->
+  <div class="view-section" data-view-section="reports">
       <div class="panel">
         <h2><i class="ti ti-timeline"></i>Riwayat Progres</h2>
         <div class="filter-bar date-tools" style="padding: 12px 16px;">
@@ -556,9 +629,11 @@
         <div id="storeCompareControls" class="store-compare-controls"></div>
         <div id="storeCompareChart"></div>
       </div>
-
-    </div>
   </div>
+  <!-- /REPORTS VIEW -->
+
+  </div>
+</div>
 </div>
 
 <div id="personModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closePersonModal()">
@@ -575,9 +650,23 @@
   </div>
 </div>
 
+<div id="storeModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeStoreModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="storeModalName"><i class="ti ti-building-store"></i> -</div>
+        <div class="modal-sub" id="storeModalSub">-</div>
+      </div>
+      <button class="modal-close" onclick="closeStoreModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="storeModalList"></div>
+  </div>
+</div>
+
 <script>
 let rows = [];
 let lastUpdateLabel = '';
+let lastWithTotals = [];
 const fields = ['device','acc','operator','boltech','arAcc','arBoltech'];
 
 const SEED = [
@@ -696,7 +785,14 @@ function isAdminFromUser(user){
   return !!user && ADMIN_EMAILS.includes((user.email||'').toLowerCase());
 }
 function syncMessage(msg,ok=true){const el=document.getElementById('syncStatus');if(!el)return;el.textContent=msg||'';el.className='upload-status '+(ok?'ok':'err');}
-function updateAdminUI(){document.getElementById('adminPanel').style.display=isAdmin?'block':'none';document.getElementById('adminBtnLabel').textContent=isAdmin?'Logout':'Login Admin';const badge=document.getElementById('modeBadge');badge.textContent=isAdmin?'Mode admin':'Mode lihat saja';badge.className='mode-badge '+(isAdmin?'admin':'view');}
+function updateAdminUI(){document.getElementById('adminPanel').style.display=isAdmin?'block':'none';document.getElementById('adminBtnLabel').textContent=isAdmin?'Logout':'Login Admin';const badge=document.getElementById('modeBadge');badge.textContent=isAdmin?'Mode admin':'Mode lihat saja';badge.className='mode-badge '+(isAdmin?'admin':'view');const navSettings=document.getElementById('navSettings');if(navSettings){navSettings.style.display=isAdmin?'flex':'none';if(!isAdmin&&currentView==='settings')switchView('dashboard');}}
+let currentView='dashboard';
+function switchView(view){
+  currentView=view;
+  document.querySelectorAll('.nav-item').forEach(btn=>btn.classList.toggle('active',btn.dataset.view===view));
+  document.querySelectorAll('.view-section').forEach(sec=>sec.classList.toggle('active',sec.dataset.viewSection===view));
+  window.scrollTo({top:0,behavior:'instant'});
+}
 async function loadAdminState(){
   if(!SUPABASE_READY){isAdmin=false;updateAdminUI();syncMessage('Supabase belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di index.html.',false);return;}
   const {data:{session}}=await sb.auth.getSession();currentUser=session?.user||null;isAdmin=isAdminFromUser(currentUser);updateAdminUI();
@@ -846,6 +942,7 @@ async function saveSnapshot(){
 
 function render(){
   const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
+  lastWithTotals = withTotals;
   const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
   const n = rows.length;
 
@@ -924,7 +1021,7 @@ function render(){
     else {
       storeTbody.innerHTML = storeRows.map((s,i)=>`
         <tr class="${i===0?'store-worst':''}">
-          <td class="name">${escapeHtml(s.store)}</td>
+          <td class="name clickable-name" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)">${escapeHtml(s.store)}</td>
           <td>${s.count}</td>
           <td><b>${s.avg.toFixed(2)}</b></td>
           <td>${s.Perfect}</td>
@@ -1088,6 +1185,32 @@ function openPersonModal(name){
 }
 function closePersonModal(){ document.getElementById('personModal').style.display = 'none'; }
 
+function openStoreModal(storeName){
+  const members = lastWithTotals
+    .filter(r => (r.store || '(Tanpa Store)') === storeName)
+    .sort((a,b) => b.total - a.total);
+  const avg = members.length ? members.reduce((s,r)=>s+r.total,0)/members.length : 0;
+  document.getElementById('storeModalName').innerHTML = `<i class="ti ti-building-store"></i> ${escapeHtml(storeName)}`;
+  document.getElementById('storeModalSub').textContent = members.length
+    ? `${members.length} ERO · Rata-rata poin ${avg.toFixed(2)}`
+    : 'Belum ada ERO tercatat untuk store ini.';
+  const list = document.getElementById('storeModalList');
+  if(!members.length){
+    list.innerHTML = '<div class="empty"><i class="ti ti-users"></i>Belum ada data ERO.</div>';
+  } else {
+    list.innerHTML = members.map((r,i)=>{
+      const grade = calcGrade(r.total);
+      const gc = gradeClass(grade);
+      return `<div class="modal-list-item">
+        <span class="clickable-name" data-name="${escapeAttr(r.name)}" onclick="closeStoreModal();openPersonModal(this.dataset.name)">${i+1}. ${escapeHtml(r.name)}</span>
+        <span><span class="grade ${gc}" style="margin-right:10px;">${grade}</span><b>${r.total.toFixed(2)}</b></span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('storeModal').style.display = 'flex';
+}
+function closeStoreModal(){ document.getElementById('storeModal').style.display = 'none'; }
+
 const STORE_COMPARE_COLORS = ['#2563EB','#059669','#F59E0B','#DC2626','#7C3AED'];
 let selectedCompareStores = [];
 
@@ -1183,7 +1306,7 @@ function renderYesterdayToday(){
 }
 function renderStoreScore(storeRows){
   const el=document.getElementById('storeScoreGrid'); if(!el)return; if(!storeRows.length){el.innerHTML='<div class="empty">Belum ada data store.</div>';return;}
-  el.innerHTML=storeRows.map(s=>{const score=Math.max(0,Math.min(100,s.avg*10)); const goodPlus=(s.Perfect+s.Good)/s.count*100; return `<div class="score-card"><div class="score-head"><div class="score-name">${escapeHtml(s.store)}</div><div class="score-value">${score.toFixed(0)}</div></div><div class="score-bar"><span style="width:${score}%"></span></div><div class="score-meta"><span>Avg ${s.avg.toFixed(2)}</span><span>Good+ ${goodPlus.toFixed(0)}%</span></div></div>`;}).join('');
+  el.innerHTML=storeRows.map(s=>{const score=Math.max(0,Math.min(100,s.avg*10)); const goodPlus=(s.Perfect+s.Good)/s.count*100; return `<div class="score-card" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)"><div class="score-head"><div class="score-name clickable-name">${escapeHtml(s.store)}</div><div class="score-value">${score.toFixed(0)}</div></div><div class="score-bar"><span style="width:${score}%"></span></div><div class="score-meta"><span>Avg ${s.avg.toFixed(2)}</span><span>Good+ ${goodPlus.toFixed(0)}%</span></div><div class="score-hint"><i class="ti ti-eye"></i>Lihat detail ERO</div></div>`;}).join('');
 }
 function renderMoversPanel(){
   const el=document.getElementById('moversPanel'); if(!el)return; const h=getFilteredHistory(); if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan.</div>';return;}
