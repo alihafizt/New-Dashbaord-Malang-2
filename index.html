@@ -691,7 +691,7 @@ const SUPABASE_READY = !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.in
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let isAdmin=false, currentUser=null, saveTimer=null;
 
-const ADMIN_EMAILS = ['GANTI-DENGAN-EMAIL-ADMIN@domain.com'].map(e=>e.trim().toLowerCase());
+const ADMIN_EMAILS = ['hafiztsyakir@gmail.com'].map(e=>e.trim().toLowerCase());
 function isAdminFromUser(user){
   return !!user && ADMIN_EMAILS.includes((user.email||'').toLowerCase());
 }
