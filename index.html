@@ -549,7 +549,7 @@ let isAdmin=false, currentUser=null, saveTimer=null;
 
 // Isi dengan email akun Supabase Auth yang berhak jadi ADMIN (boleh lebih dari satu, pisahkan koma).
 // Akun lain yang login dengan email di luar daftar ini otomatis jadi mode "lihat saja".
-const ADMIN_EMAILS = ['GANTI-DENGAN-EMAIL-ADMIN@domain.com'].map(e=>e.trim().toLowerCase());
+const ADMIN_EMAILS = ['hafiztsyakir@gmail.com'].map(e=>e.trim().toLowerCase());
 function isAdminFromUser(user){
   return !!user && ADMIN_EMAILS.includes((user.email||'').toLowerCase());
 }
