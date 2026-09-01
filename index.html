@@ -22,17 +22,18 @@
 
   .hero { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 22px; }
   .hero-left h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; color: #17233A; }
-  .hero-left h1 i { color: #CA8A04; font-size: 26px; }
+  .hero-left h1 i { color: #2563EB; font-size: 26px; }
   .hero-left .sub { color: #64748B; font-size: 14px; margin-top: 6px; }
   .hero-right { display: flex; align-items: center; gap: 10px; }
   .mode-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
   .mode-badge.view { background: #E7ECF5; color: #64748B; }
-  .mode-badge.admin { background: #F5B400; color: #3B2504; }
+  .mode-badge.admin { background: #2563EB; color: #FFFFFF; }
   .readonly-val { font-size: 12.5px; color: #334155; }
 
   .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
   .grade-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
-  .stat-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(30,41,59,0.04); }
+  .stat-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: box-shadow .15s, transform .15s; }
+  .stat-card:hover { box-shadow: 0 4px 12px rgba(15,23,42,0.06); transform: translateY(-1px); }
   .stat-card .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: #64748B; display: flex; align-items: center; gap: 6px; }
   .stat-card .val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; margin-top: 6px; color: #1E2A3B; }
   .stat-card .upd { font-size: 11px; color: #94A3B8; margin-top: 4px; }
@@ -43,13 +44,13 @@
   .stat-card.bad { border-top: 3px solid #F97316; } .stat-card.bad .val { color: #EA580C; } .stat-card.bad .pct { color: #EA580C; }
   .stat-card.poor { border-top: 3px solid #DC2626; } .stat-card.poor .val { color: #DC2626; } .stat-card.poor .pct { color: #DC2626; }
 
-  .panel { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px 22px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(30,41,59,0.05); }
+  .panel { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 18px; padding: 20px 22px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.03); }
   .panel h2 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; margin: 0 0 16px; color: #475569; text-transform: uppercase; letter-spacing: 0.09em; display: flex; align-items: center; gap: 8px; }
-  .panel h2 i { font-size: 16px; color: #CA8A04; }
+  .panel h2 i { font-size: 16px; color: #2563EB; }
 
   .upload-zone { border: 2px dashed #CBD5E1; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
-  .upload-zone:hover, .upload-zone.drag { border-color: #F5B400; background: #FFFBEB; }
-  .upload-zone i { font-size: 30px; color: #CA8A04; }
+  .upload-zone:hover, .upload-zone.drag { border-color: #2563EB; background: #EFF6FF; }
+  .upload-zone i { font-size: 30px; color: #2563EB; }
   .upload-zone .main-txt { font-weight: 600; margin-top: 8px; color: #1E2A3B; }
   .upload-zone .sub-txt { color: #64748B; font-size: 12px; margin-top: 4px; }
   .upload-status { margin-top: 10px; font-size: 13px; }
@@ -61,9 +62,9 @@
   textarea { width: 100%; min-height: 80px; background: #F8FAFC; color: #1E2A3B; border: 1px solid #CBD5E1; border-radius: 8px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: vertical; margin-top: 10px; }
   .toolbar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
   button { background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; padding: 9px 16px; border-radius: 9px; font-size: 13px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: border-color .15s, background .15s; }
-  button:hover { border-color: #F5B400; background: #FFFBEB; }
-  button.primary { background: #F5B400; color: #3B2504; border-color: #F5B400; font-weight: 600; }
-  button.primary:hover { background: #E0A500; }
+  button:hover { border-color: #2563EB; background: #EFF6FF; }
+  button.primary { background: #2563EB; color: #FFFFFF; border-color: #2563EB; font-weight: 600; }
+  button.primary:hover { background: #1D4ED8; }
   button.danger { background: #FEF2F2; border-color: #FCA5A5; color: #B91C1C; }
 
   .podium { display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 6px 0 2px; }
@@ -122,7 +123,7 @@
   .filter-field { display: flex; flex-direction: column; gap: 4px; }
   .filter-field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748B; font-weight: 600; }
   .filter-field select { background: #FFFFFF; color: #1E2A3B; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px 10px; font-size: 13px; min-width: 170px; cursor: pointer; }
-  .filter-field select:focus { outline: none; border-color: #F5B400; }
+  .filter-field select:focus { outline: none; border-color: #2563EB; }
   .filter-count { font-size: 12.5px; color: #64748B; margin-left: auto; }
   th, td { padding: 7px 8px; text-align: center; border-bottom: 1px solid #E2E8F0; }
   th { color: #64748B; font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.05em; }
@@ -144,13 +145,13 @@
   .snap-label { font-weight: 600; color: #1E2A3B; }
   .snap-detail { color: #64748B; font-size: 12px; margin-top: 2px; }
   .snap-avg-wrap { display: flex; align-items: center; gap: 8px; }
-  .snap-avg { font-family: 'JetBrains Mono', monospace; color: #CA8A04; font-weight: 700; font-size: 16px; }
+  .snap-avg { font-family: 'JetBrains Mono', monospace; color: #2563EB; font-weight: 700; font-size: 16px; }
   .snap-trend { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
   .snap-trend.up { background: #DCFCE7; color: #15803D; }
   .snap-trend.down { background: #FEE2E2; color: #B91C1C; }
   .snap-trend.same { background: #F1F5F9; color: #64748B; }
   .snap-toggle { cursor: pointer; color: #94A3B8; font-size: 11px; margin-top: 4px; user-select: none; }
-  .snap-toggle:hover { color: #CA8A04; }
+  .snap-toggle:hover { color: #2563EB; }
   .snap-body { margin-top: 10px; padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; }
   .snap-meta { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #E2E8F0; }
   .snap-meta .modal-list-item { padding: 3px 0; font-size: 12px; }
@@ -176,7 +177,7 @@
   #storeTable td.name, #storeTable th.name { text-align: left; }
   #storeTable tr.store-worst td.name { color: #B91C1C; font-weight: 700; }
   .clickable-name { cursor: pointer; }
-  .clickable-name:hover { text-decoration: underline; color: #CA8A04; }
+  .clickable-name:hover { text-decoration: underline; color: #2563EB; }
 
   .store-compare-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
   .store-chip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; color: #475569; font-weight: 500; }
@@ -196,7 +197,8 @@
 
   @media print {
     .panel { break-inside: avoid; box-shadow: none; }
-    #adminPanel, .toolbar, .filter-bar, .hero-right, .upload-status { display: none !important; }
+    #adminPanel, .toolbar, .filter-bar, .hero-right, .upload-status, .tabs-nav { display: none !important; }
+    .tab-hidden { display: block !important; }
     .table-scroll, .history-scroll { height: auto !important; overflow: visible !important; }
     body { background: #FFFFFF; }
   }
@@ -208,11 +210,14 @@
   .insight-card .muted { color:#64748B; font-size:11.5px; margin-top:4px; }
   .insight-card.gain { background:#F0FDF4; border-color:#BBF7D0; } .insight-card.drop { background:#FEF2F2; border-color:#FECACA; }
   .score-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-  .score-card { border:1px solid #E2E8F0; border-radius:12px; padding:14px; background:#FFFFFF; }
+  .score-card { border:1px solid #E2E8F0; border-radius:16px; padding:16px; background:#FFFFFF; box-shadow:0 1px 2px rgba(30,41,59,0.04); transition:box-shadow .15s, transform .15s; }
+  .score-card:hover { box-shadow:0 6px 16px rgba(37,99,235,0.12); transform:translateY(-2px); }
   .score-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
-  .score-name { font-weight:700; font-size:13px; } .score-value { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:20px; }
-  .score-bar { height:8px; background:#E2E8F0; border-radius:20px; overflow:hidden; margin:10px 0 8px; } .score-bar span { display:block; height:100%; background:#CA8A04; border-radius:20px; }
+  .score-name { font-weight:700; font-size:13px; cursor:pointer; } .score-name:hover { color:#2563EB; text-decoration:underline; }
+  .score-value { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:20px; }
+  .score-bar { height:8px; background:#E2E8F0; border-radius:20px; overflow:hidden; margin:10px 0 8px; } .score-bar span { display:block; height:100%; background:linear-gradient(90deg,#2563EB,#3B82F6); border-radius:20px; }
   .score-meta { display:flex; justify-content:space-between; color:#64748B; font-size:11px; }
+  .score-meta-hint { font-size:10.5px; color:#94A3B8; margin-top:6px; }
   .search-input { min-width:240px; background:#FFF; color:#1E2A3B; border:1px solid #CBD5E1; border-radius:8px; padding:8px 10px; font-size:13px; }
   .date-tools { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
   .date-tools input { background:#FFF; color:#1E2A3B; border:1px solid #CBD5E1; border-radius:8px; padding:8px 10px; font-size:13px; }
@@ -231,6 +236,12 @@
   body.gated .wrap { display: none; }
   #viewGate { display: none; }
   body.gated #viewGate { display: flex; }
+
+  .tabs-nav { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid #E2E8F0; flex-wrap:wrap; }
+  .tab-btn { background:none; border:none; border-bottom:3px solid transparent; border-radius:8px 8px 0 0; padding:11px 18px; font-size:13.5px; font-weight:600; color:#64748B; cursor:pointer; margin-bottom:-2px; }
+  .tab-btn:hover { background:#F1F5F9; border-color:transparent; }
+  .tab-btn.active { color:#2563EB; border-bottom-color:#2563EB; background:#EFF6FF; }
+  .tab-hidden { display:none !important; }
 </style>
 </head>
 <body class="gated">
@@ -272,7 +283,14 @@
   </div>
 
 
-  <div class="panel mobile-leader">
+  <div class="tabs-nav">
+    <button class="tab-btn" data-tab="overview" onclick="switchTab('overview')"><i class="ti ti-layout-dashboard"></i> Ringkasan</button>
+    <button class="tab-btn" data-tab="store" onclick="switchTab('store')"><i class="ti ti-building-store"></i> Store</button>
+    <button class="tab-btn" data-tab="data" onclick="switchTab('data')"><i class="ti ti-table"></i> Data ERO</button>
+    <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="ti ti-timeline"></i> Reports</button>
+  </div>
+
+  <div class="panel mobile-leader" data-tab="overview">
     <h2><i class="ti ti-device-mobile"></i>Mobile Leader View</h2>
     <div class="mobile-grid">
       <div class="mobile-kpi"><div class="k">ERO</div><div class="v" id="mCount">0</div></div>
@@ -283,28 +301,28 @@
     <div class="focus-box"><b>Fokus hari ini</b><div id="mFocus">Memuat prioritas...</div></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="overview">
     <h2><i class="ti ti-bolt"></i>Yesterday vs Today</h2>
     <div id="yesterdayToday" class="insight-grid"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="store">
     <h2><i class="ti ti-building-store"></i>Store Performance Score</h2>
     <div class="sub" style="color:#64748B;font-size:12.5px;margin-bottom:12px;">Skor store dihitung dari rata-rata poin saat ini (maksimum 10 = 100).</div>
     <div id="storeScoreGrid" class="score-grid"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="overview">
     <h2><i class="ti ti-arrows-up-down"></i>Most Improved &amp; Biggest Drop</h2>
     <div id="moversPanel" class="insight-grid"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="overview">
     <h2><i class="ti ti-bell"></i>Alert Otomatis</h2>
     <div id="alertPanel" class="alert-list"></div>
   </div>
 
-  <div class="panel" id="adminPanel" style="display:none;">
+  <div class="panel" id="adminPanel" data-tab="data" style="display:none;">
     <h2><i class="ti ti-upload"></i>Update Data Harian</h2>
     <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
       <i class="ti ti-file-spreadsheet"></i>
@@ -327,22 +345,22 @@
     </details>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="overview">
     <h2><i class="ti ti-medal"></i>Top 3</h2>
     <div id="podium" class="podium"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="data">
     <h2><i class="ti ti-list-details"></i>Papan Peringkat Lengkap</h2>
     <div id="leaderboard"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="data">
     <h2><i class="ti ti-alert-triangle"></i>Bottom 3 — Perlu Perhatian</h2>
     <div id="watchlist"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="store">
     <h2><i class="ti ti-building-store"></i>Ringkasan per Store</h2>
     <div class="sub" style="color:#64748B; font-size:12.5px; margin-bottom:12px;">Diurutkan dari rata-rata poin terendah — toko yang paling perlu dibantu tampil paling atas.</div>
     <div style="overflow-x:auto;">
@@ -357,7 +375,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="data">
     <h2><i class="ti ti-table"></i>Semua Data (<span id="rowCount">0</span> orang)</h2>
     <div class="filter-bar">
       <div class="filter-field"><label>Cari Nama ERO</label><input class="search-input" id="searchName" type="search" placeholder="Ketik nama ERO..." oninput="onFilterChange()"></div>
@@ -397,19 +415,20 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="reports">
     <h2><i class="ti ti-timeline"></i>Riwayat Progres</h2>
     <div class="date-tools">
       <div class="filter-field"><label>Dari tanggal</label><input type="date" id="dateFrom" onchange="applyDateFilter()"></div>
       <div class="filter-field"><label>Sampai tanggal</label><input type="date" id="dateTo" onchange="applyDateFilter()"></div>
       <button onclick="setDateRange(7)">7 Hari</button><button onclick="setDateRange(14)">14 Hari</button><button onclick="setDateRange(30)">30 Hari</button><button onclick="clearDateFilter()">Semua</button>
     </div>
+    <div id="snapshotHealthBanner"></div>
     <div id="historySummary"></div>
     <div id="historyTrend"></div>
     <div id="history" class="history-scroll"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-tab="store">
     <h2><i class="ti ti-chart-line"></i>Perbandingan Antar Store dari Waktu ke Waktu</h2>
     <div class="sub" style="color:#64748B; font-size:12.5px; margin-bottom:12px;">Berdasarkan data snapshot yang tersimpan di Riwayat Progres. Pilih maksimal 5 store untuk dibandingkan.</div>
     <div id="storeCompareControls" class="store-compare-controls"></div>
@@ -431,7 +450,36 @@
   </div>
 </div>
 
+<div id="storeModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeStoreModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="storeModalName">-</div>
+        <div class="modal-sub" id="storeModalSummary">-</div>
+      </div>
+      <button class="modal-close" onclick="closeStoreModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="storeModalList"></div>
+  </div>
+</div>
+
 <script>
+function switchTab(tabId){
+  document.querySelectorAll('[data-tab]').forEach(el=>{
+    if(el.dataset.tab===tabId) el.classList.remove('tab-hidden');
+    else el.classList.add('tab-hidden');
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tabId));
+  try{ localStorage.setItem('bm2_active_tab', tabId); }catch(e){}
+}
+(function initTabs(){
+  let t = 'overview';
+  try{ t = localStorage.getItem('bm2_active_tab') || 'overview'; }catch(e){}
+  const valid = ['overview','store','data','reports'];
+  if(!valid.includes(t)) t = 'overview';
+  switchTab(t);
+})();
+
 let rows = [];
 let lastUpdateLabel = '';
 const fields = ['device','acc','operator','boltech','arAcc','arBoltech'];
@@ -549,7 +597,7 @@ let isAdmin=false, currentUser=null, saveTimer=null;
 
 // Isi dengan email akun Supabase Auth yang berhak jadi ADMIN (boleh lebih dari satu, pisahkan koma).
 // Akun lain yang login dengan email di luar daftar ini otomatis jadi mode "lihat saja".
-const ADMIN_EMAILS = ['hafiztsyakir@gmail.com'].map(e=>e.trim().toLowerCase());
+const ADMIN_EMAILS = ['GANTI-DENGAN-EMAIL-ADMIN@domain.com'].map(e=>e.trim().toLowerCase());
 function isAdminFromUser(user){
   return !!user && ADMIN_EMAILS.includes((user.email||'').toLowerCase());
 }
@@ -946,6 +994,29 @@ function openPersonModal(name){
 }
 function closePersonModal(){ document.getElementById('personModal').style.display = 'none'; }
 
+function openStoreModal(storeName){
+  if(!storeName) return;
+  const withTotals = rows.map(r=>({...r, total: calcTotal(r)})).filter(r=>(r.store||'(Tanpa Store)')===storeName);
+  withTotals.sort((a,b)=>b.total-a.total);
+  const avg = withTotals.length ? withTotals.reduce((s,r)=>s+r.total,0)/withTotals.length : 0;
+  document.getElementById('storeModalName').innerHTML = `<i class="ti ti-building-store" style="color:#2563EB; vertical-align:-2px;"></i> ${escapeHtml(storeName)}`;
+  document.getElementById('storeModalSummary').textContent = `${withTotals.length} ERO · Rata-rata poin ${avg.toFixed(2)}`;
+  const listEl = document.getElementById('storeModalList');
+  if(withTotals.length===0){
+    listEl.innerHTML = '<div class="empty"><i class="ti ti-users"></i>Tidak ada ERO tercatat untuk store ini.</div>';
+  } else {
+    listEl.innerHTML = withTotals.map((r,i)=>{
+      const grade = calcGrade(r.total); const gc = gradeClass(grade);
+      return `<div class="modal-list-item">
+        <span><b>${i+1}.</b> <span class="clickable-name" data-name="${escapeAttr(r.name)}" onclick="closeStoreModal();openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</span></span>
+        <span><b>${r.total.toFixed(2)}</b> <span class="grade ${gc}" style="margin-left:6px;">${grade}</span></span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('storeModal').style.display = 'flex';
+}
+function closeStoreModal(){ document.getElementById('storeModal').style.display = 'none'; }
+
 const STORE_COMPARE_COLORS = ['#2563EB','#059669','#F59E0B','#DC2626','#7C3AED'];
 let selectedCompareStores = [];
 
@@ -1030,25 +1101,42 @@ function getFilteredHistory(){
 function applyDateFilter(){ dateFrom=document.getElementById('dateFrom')?.value||''; dateTo=document.getElementById('dateTo')?.value||''; filteredHistoryData=getFilteredHistory(); renderHistory(filteredHistoryData); renderStoreCompareChart(); renderYesterdayToday(); renderMoversPanel(); }
 function setDateRange(days){const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days+1); document.getElementById('dateFrom').value=start.toISOString().slice(0,10); document.getElementById('dateTo').value=end.toISOString().slice(0,10); applyDateFilter();}
 function clearDateFilter(){dateFrom='';dateTo='';document.getElementById('dateFrom').value='';document.getElementById('dateTo').value='';applyDateFilter();}
+function snapshotEmptyMessage(h, needDetail){
+  if(h.length<2){
+    return `<div class="empty"><i class="ti ti-info-circle"></i>Baru ada ${h.length} snapshot tersimpan. Perlu minimal 2 kali update data (dengan isi yang benar-benar berbeda) untuk melihat perbandingan.</div>`;
+  }
+  if(needDetail){
+    const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const prev=chrono[chrono.length-2], cur=chrono[chrono.length-1];
+    if(!prev.rows_snapshot || !cur.rows_snapshot){
+      return `<div class="empty"><i class="ti ti-alert-triangle"></i>Kolom <b>rows_snapshot</b> belum tersimpan di database untuk snapshot ini (kemungkinan kolomnya belum dibuat di Supabase). Jalankan SQL ini di Supabase SQL Editor, lalu upload data sekali lagi:<br><code style="display:block;margin-top:8px;padding:8px;background:#F1F5F9;border-radius:6px;font-size:11px;text-align:left;">ALTER TABLE rank_history ADD COLUMN IF NOT EXISTS rows_snapshot jsonb;</code></div>`;
+    }
+  }
+  return null;
+}
 function renderYesterdayToday(){
   const el=document.getElementById('yesterdayToday'); if(!el)return;
   const h=getFilteredHistory();
-  if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan untuk perbandingan.</div>';return;}
+  const msg = snapshotEmptyMessage(h, false);
+  if(msg){el.innerHTML=msg;return;}
   const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2], cur=chrono[chrono.length-1]; const d=cur.avg-prev.avg; const pct=prev.avg?d/prev.avg*100:0;
   const curMap={};(cur.rows_snapshot||[]).forEach(r=>curMap[r.name]=r); const prevMap={};(prev.rows_snapshot||[]).forEach(r=>prevMap[r.name]=r);
   let improved=0,declined=0;Object.keys(curMap).forEach(n=>{if(prevMap[n]){if(curMap[n].rank<prevMap[n].rank)improved++;else if(curMap[n].rank>prevMap[n].rank)declined++;}});
-  el.innerHTML=`<div class="insight-card"><h3>${escapeHtml(prev.label)}</h3><div class="big">${prev.avg.toFixed(2)}</div><div class="muted">Snapshot sebelumnya</div></div><div class="insight-card ${d>=0?'gain':'drop'}"><h3>${escapeHtml(cur.label)}</h3><div class="big">${cur.avg.toFixed(2)} ${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(2)}</div><div class="muted">${d>=0?'+':''}${pct.toFixed(1)}% · ${improved} ERO naik rank · ${declined} turun rank</div></div>`;
+  const detailNote = (!cur.rows_snapshot||!prev.rows_snapshot) ? '<div class="muted" style="margin-top:4px;color:#DC2626;">Detail per-ERO belum tersedia untuk salah satu snapshot ini.</div>' : '';
+  el.innerHTML=`<div class="insight-card"><h3>${escapeHtml(prev.label)}</h3><div class="big">${prev.avg.toFixed(2)}</div><div class="muted">Snapshot sebelumnya</div></div><div class="insight-card ${d>=0?'gain':'drop'}"><h3>${escapeHtml(cur.label)}</h3><div class="big">${cur.avg.toFixed(2)} ${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(2)}</div><div class="muted">${d>=0?'+':''}${pct.toFixed(1)}% · ${improved} ERO naik rank · ${declined} turun rank</div>${detailNote}</div>`;
 }
 function renderStoreScore(storeRows){
   const el=document.getElementById('storeScoreGrid'); if(!el)return; if(!storeRows.length){el.innerHTML='<div class="empty">Belum ada data store.</div>';return;}
-  el.innerHTML=storeRows.map(s=>{const score=Math.max(0,Math.min(100,s.avg*10)); const goodPlus=(s.Perfect+s.Good)/s.count*100; return `<div class="score-card"><div class="score-head"><div class="score-name">${escapeHtml(s.store)}</div><div class="score-value">${score.toFixed(0)}</div></div><div class="score-bar"><span style="width:${score}%"></span></div><div class="score-meta"><span>Avg ${s.avg.toFixed(2)}</span><span>Good+ ${goodPlus.toFixed(0)}%</span></div></div>`;}).join('');
+  el.innerHTML=storeRows.map(s=>{const score=Math.max(0,Math.min(100,s.avg*10)); const goodPlus=(s.Perfect+s.Good)/s.count*100; return `<div class="score-card"><div class="score-head"><div class="score-name" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)">${escapeHtml(s.store)}</div><div class="score-value">${score.toFixed(0)}</div></div><div class="score-bar"><span style="width:${score}%"></span></div><div class="score-meta"><span>Avg ${s.avg.toFixed(2)}</span><span>Good+ ${goodPlus.toFixed(0)}%</span></div><div class="score-meta-hint">${s.count} ERO · klik nama untuk lihat daftar</div></div>`;}).join('');
 }
 function renderMoversPanel(){
-  const el=document.getElementById('moversPanel'); if(!el)return; const h=getFilteredHistory(); if(h.length<2){el.innerHTML='<div class="empty">Minimal 2 snapshot diperlukan.</div>';return;}
-  const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2],cur=chrono[chrono.length-1]; if(!prev.rows_snapshot||!cur.rows_snapshot){el.innerHTML='<div class="empty">Snapshot detail per-orang belum tersedia.</div>';return;}
+  const el=document.getElementById('moversPanel'); if(!el)return; const h=getFilteredHistory();
+  const msg = snapshotEmptyMessage(h, true);
+  if(msg){el.innerHTML=msg;return;}
+  const chrono=[...h].sort((a,b)=>new Date(a.date)-new Date(b.date)); const prev=chrono[chrono.length-2],cur=chrono[chrono.length-1];
   const pm={};prev.rows_snapshot.forEach(r=>pm[r.name]=r.rank); const moves=cur.rows_snapshot.map(r=>({name:r.name,delta:(pm[r.name]??r.rank)-r.rank})).filter(r=>r.delta!==0); const gains=moves.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,3),drops=moves.filter(x=>x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,3);
-  const list=(arr,up)=>arr.length?`<div class="mover-list">${arr.map(x=>`<div class="mover-row"><span class="nm">${escapeHtml(x.name)}</span><span class="delta">${up?'▲ +':'▼ '}${up?x.delta:Math.abs(x.delta)} rank</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada perubahan.</div>';
-  el.innerHTML=`<div class="insight-card gain"><h3>📈 Most Improved</h3>${list(gains,true)}</div><div class="insight-card drop"><h3>📉 Biggest Drop</h3>${list(drops,false)}</div>`;
+  const list=(arr,up)=>arr.length?`<div class="mover-list">${arr.map(x=>`<div class="mover-row"><span class="nm">${escapeHtml(x.name)}</span><span class="delta">${up?'▲ +':'▼ '}${up?x.delta:Math.abs(x.delta)} rank</span></div>`).join('')}</div>`:'<div class="empty">Tidak ada perubahan rank dibanding snapshot sebelumnya.</div>';
+  el.innerHTML=`<div class="insight-card gain"><h3>📈 Most Improved</h3><div class="muted" style="margin-bottom:6px;">${escapeHtml(prev.label)} → ${escapeHtml(cur.label)}</div>${list(gains,true)}</div><div class="insight-card drop"><h3>📉 Biggest Drop</h3><div class="muted" style="margin-bottom:6px;">${escapeHtml(prev.label)} → ${escapeHtml(cur.label)}</div>${list(drops,false)}</div>`;
 }
 function renderAlerts(withTotals,sorted){
   const el=document.getElementById('alertPanel');if(!el)return; const alerts=[]; const poor=withTotals.filter(r=>calcGrade(r.total)==='Poor'), bad=withTotals.filter(r=>calcGrade(r.total)==='Bad');
@@ -1068,9 +1156,20 @@ function renderHistory(history){
   if(!history || history.length===0){
     el.innerHTML = '<div class="empty"><i class="ti ti-timeline"></i>Belum ada snapshot. Klik "Simpan snapshot hari ini" untuk mulai melacak progres.</div>';
     summaryEl.innerHTML = ''; trendEl.innerHTML = '';
+    const hb=document.getElementById('snapshotHealthBanner'); if(hb)hb.innerHTML='';
     return;
   }
   const chrono = [...history].reverse();
+
+  const latest = chrono[chrono.length-1];
+  const healthEl = document.getElementById('snapshotHealthBanner');
+  if(healthEl){
+    if(!latest.rows_snapshot){
+      healthEl.innerHTML = `<div class="empty" style="text-align:left; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:12px 14px; margin-bottom:14px;"><i class="ti ti-alert-triangle" style="color:#DC2626;"></i> Snapshot terbaru ("${escapeHtml(latest.label)}") belum menyimpan detail per-ERO (kolom <b>rows_snapshot</b>). Ini sebabnya panel Most Improved &amp; Biggest Drop tidak muncul. Jalankan SQL berikut di Supabase SQL Editor, lalu upload data sekali lagi:<br><code style="display:block;margin-top:8px;padding:8px;background:#FFFFFF;border-radius:6px;font-size:11px;">ALTER TABLE rank_history ADD COLUMN IF NOT EXISTS rows_snapshot jsonb;</code></div>`;
+    } else {
+      healthEl.innerHTML = '';
+    }
+  }
 
   const firstAvg = chrono[0].avg, lastAvg = chrono[chrono.length-1].avg;
   const overallDelta = Math.round((lastAvg-firstAvg)*100)/100;
