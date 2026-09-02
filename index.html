@@ -10,286 +10,381 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* ==========================================================================
+     Big Malang 2 — Modern Glass UI (visual layer) on top of the working logic
+     ========================================================================== */
   :root {
     --bg-body: #F4F7FE;
-    --panel-bg: #FFFFFF;
-    --text-main: #1E293B;
+    --panel-bg: rgba(255, 255, 255, 0.7);
+    --panel-border: rgba(255, 255, 255, 0.8);
+    --text-main: #0F172A;
     --text-muted: #64748B;
-    --border-light: #E2E8F0;
+    --border-light: rgba(226, 232, 240, 0.6);
     --brand: #F5B400;
-    --brand-hover: #E0A500;
+    --brand-hover: #D99E00;
+    --brand-light: #FFFBEB;
+
+    --success: #059669; --success-light: #ECFDF5;
+    --good: #65A30D; --good-light: #F4FCE3;
+    --warning: #D97706; --warning-light: #FFFBEB;
+    --bad: #EA580C; --bad-light: #FFF7ED;
+    --danger: #DC2626; --danger-light: #FEF2F2;
+
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+    --shadow-float: 0 12px 32px rgba(15, 23, 42, 0.1);
   }
 
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg-body);
-    background-image: radial-gradient(circle at 0% 0%, #FFFFFF 0%, #F4F7FE 60%);
+    background-color: var(--bg-body);
+    background-image:
+      radial-gradient(at 0% 0%, #FFFFFF 0px, transparent 50%),
+      radial-gradient(at 100% 0%, #E0E7FF 0px, transparent 50%),
+      radial-gradient(at 100% 100%, #FEF3C7 0px, transparent 50%);
+    background-attachment: fixed;
     color: var(--text-main);
-    padding: 24px 16px 64px;
+    padding: clamp(16px, 3vw, 24px) clamp(12px, 2vw, 16px) 64px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* Custom Scrollbar for sleek look */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; border: 2px solid var(--bg-body); }
   ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-  .wrap { max-width: 1600px; width: 96%; margin: 0 auto; }
+  .wrap { max-width: 1600px; width: 100%; margin: 0 auto; }
 
-  /* App Shell: sidebar navigation + content */
+  /* App shell */
   .app-shell { display: flex; gap: 24px; align-items: flex-start; }
+
   .app-sidebar {
-    flex: 0 0 224px; position: sticky; top: 24px; align-self: flex-start;
-    background: var(--panel-bg); border-radius: 20px; padding: 18px 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(226, 232, 240, 0.6);
-    display: flex; flex-direction: column; gap: 4px;
+    flex: 0 0 240px; position: sticky; top: 24px; align-self: flex-start;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-radius: 24px; padding: 20px 16px;
+    box-shadow: var(--shadow-md); border: 1px solid var(--panel-border);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: transform 0.3s ease;
   }
   .sidebar-brand {
-    display: flex; align-items: center; gap: 10px; padding: 6px 10px 16px;
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15.5px;
-    color: #0F172A; border-bottom: 1px dashed var(--border-light); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px; padding: 8px 12px 20px;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px;
+    color: var(--text-main); border-bottom: 1px solid var(--border-light); margin-bottom: 8px;
   }
-  .sidebar-brand i { color: var(--brand); font-size: 19px; background: #FEF3C7; padding: 8px; border-radius: 10px; }
-  .app-sidebar nav { display: flex; flex-direction: column; gap: 4px; }
+  .sidebar-brand i {
+    color: var(--brand); font-size: 22px; background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+    padding: 8px; border-radius: 12px; box-shadow: 0 2px 8px rgba(245, 180, 0, 0.15);
+  }
+  .app-sidebar nav { display: flex; flex-direction: column; gap: 6px; }
   .nav-item {
     display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
-    padding: 11px 14px; border-radius: 12px; border: 1px solid transparent; background: transparent;
-    box-shadow: none; color: var(--text-muted); font-weight: 600; font-size: 13.5px;
+    padding: 12px 16px; border-radius: 14px; border: 1px solid transparent; background: transparent;
+    box-shadow: none; color: var(--text-muted); font-weight: 600; font-size: 14px; cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .nav-item i { font-size: 17px; width: 18px; text-align: center; }
-  .nav-item:hover { background: #F8FAFC; color: var(--text-main); border-color: transparent; transform: none; }
-  .nav-item.active { background: #FFFBEB; color: #92400E; border-color: #FDE68A; }
+  .nav-item i { font-size: 18px; width: 20px; text-align: center; transition: transform 0.2s; }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.8); color: var(--text-main); transform: none; }
+  .nav-item:hover i { transform: scale(1.1); }
+  .nav-item.active { background: var(--brand-light); color: #92400E; border-color: rgba(245, 180, 0, 0.2); font-weight: 700; box-shadow: var(--shadow-sm); }
   .nav-item.active i { color: var(--brand); }
+
   .app-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 
-  .view-section { display: none; flex-direction: column; gap: 24px; }
+  .view-section { display: none; flex-direction: column; gap: 24px; animation: fadeIn 0.35s ease forwards; }
   .view-section.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
   .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; }
   .dashboard-grid-full { grid-column: 1 / -1; }
   @media(max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
+  /* Mobile: floating pill nav bar (fixes old cramped/oversized sidebar) */
   @media(max-width: 900px) {
+    body { padding-bottom: 108px; }
     .app-shell { flex-direction: column; }
-    .app-sidebar { position: static; flex-direction: row; overflow-x: auto; width: 100%; gap: 6px; padding: 10px; }
-    .app-sidebar nav { flex-direction: row; gap: 6px; }
+    .app-sidebar {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 24px); max-width: 560px; flex-direction: row; z-index: 90;
+      padding: 8px 10px; border-radius: 26px; top: auto;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.5) inset;
+      align-self: center;
+    }
     .sidebar-brand { display: none; }
-    .nav-item { flex: 0 0 auto; white-space: nowrap; }
+    .app-sidebar nav { flex-direction: row; width: 100%; justify-content: space-between; gap: 2px; }
+    .nav-item { flex: 1 1 0; min-width: 0; width: auto; flex-direction: column; gap: 3px; padding: 7px 2px; font-size: 9.5px; border-radius: 16px; text-align: center; justify-content: center; white-space: nowrap; }
+    .nav-item i { font-size: 18px; width: auto; }
+    .app-content { width: 100%; }
   }
 
-  /* Hero Section */
-  .hero { 
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; 
-    margin-bottom: 24px; background: var(--panel-bg); padding: 24px 32px; 
-    border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); 
+  /* Hero */
+  .hero {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    background: var(--panel-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    padding: 24px 32px; border-radius: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--panel-border);
   }
-  .hero-left h1 { 
-    font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; 
-    margin: 0; letter-spacing: -0.02em; display: flex; align-items: center; gap: 12px; color: #0F172A; 
+  .hero-left h1 {
+    font-family: 'Space Grotesk', sans-serif; font-size: clamp(22px, 4vw, 30px); font-weight: 700;
+    margin: 0; display: flex; align-items: center; gap: 12px; color: var(--text-main); letter-spacing: -0.02em;
   }
-  .hero-left h1 i { color: var(--brand); font-size: 28px; background: #FEF3C7; padding: 10px; border-radius: 14px; }
-  .hero-left .sub { color: var(--text-muted); font-size: 14.5px; margin-top: 6px; font-weight: 500; }
+  .hero-left h1 i { color: var(--brand); background: var(--brand-light); padding: 10px; border-radius: 14px; font-size: 26px; }
+  .hero-left .sub { color: var(--text-muted); font-size: 14.5px; margin-top: 8px; font-weight: 500; }
   .hero-right { display: flex; align-items: center; gap: 12px; }
-  
+
   .mode-badge { font-size: 11.5px; padding: 6px 12px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
   .mode-badge.view { background: #F1F5F9; color: #64748B; }
-  .mode-badge.admin { background: #FFFBEB; color: #B48300; border: 1px solid #FDE68A; }
-
-  /* Top Metrics Grid */
-  .top-metrics-grid { display: flex; gap: 24px; margin-bottom: 24px; }
-  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 0 0 350px; }
-  .grade-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; flex: 1; }
-  
-  .stat-card { 
-    background: var(--panel-bg); border-radius: 16px; padding: 18px 20px; 
-    box-shadow: 0 2px 12px rgba(0,0,0,0.02); position: relative; overflow: hidden; 
-    display: flex; flex-direction: column; justify-content: center;
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
-  .stat-card::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
-  .stat-card.perfect::after { background: #059669; }
-  .stat-card.good::after { background: #84CC16; }
-  .stat-card.needimprove::after { background: #F59E0B; }
-  .stat-card.bad::after { background: #F97316; }
-  .stat-card.poor::after { background: #DC2626; }
-
-  .stat-card .lbl { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
-  .stat-card .val { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; margin-top: 8px; color: var(--text-main); line-height: 1; }
-  .stat-card .upd { font-size: 11px; color: #94A3B8; margin-top: 6px; font-weight: 500; }
-  .stat-card .pct { font-size: 12px; font-weight: 700; margin-top: 6px; }
-  
-  .stat-card.perfect .val, .stat-card.perfect .pct { color: #059669; }
-  .stat-card.good .val, .stat-card.good .pct { color: #65A30D; }
-  .stat-card.needimprove .val, .stat-card.needimprove .pct { color: #D97706; }
-  .stat-card.bad .val, .stat-card.bad .pct { color: #EA580C; }
-  .stat-card.poor .val, .stat-card.poor .pct { color: #DC2626; }
-
-  /* Desktop Grid Layout */
-  .dashboard-layout { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
-  .dashboard-sidebar { display: flex; flex-direction: column; gap: 24px; }
-  .dashboard-main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  .mode-badge.admin { background: var(--brand-light); color: #B48300; border: 1px solid #FDE68A; }
 
   /* Panels */
-  .panel { 
-    background: var(--panel-bg); border-radius: 20px; padding: 24px 28px; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(226, 232, 240, 0.5); 
+  .panel {
+    background: var(--panel-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-radius: 24px; padding: 24px;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--panel-border);
+    transition: box-shadow 0.3s ease;
   }
+  .panel:hover { box-shadow: var(--shadow-md); }
   .dashboard-sidebar .panel { padding: 20px 24px; }
-  
-  .panel h2 { 
-    font-family: 'Space Grotesk', sans-serif; font-size: 15px; margin: 0 0 16px; 
-    color: #0F172A; text-transform: uppercase; letter-spacing: 0.05em; 
-    display: flex; align-items: center; gap: 10px; padding-bottom: 14px; 
-    border-bottom: 1px dashed var(--border-light); 
-  }
-  .panel h2 i { font-size: 18px; color: var(--brand); background: #FFFBEB; padding: 6px; border-radius: 8px; }
 
-  /* Upload & Admin */
-  .upload-zone { border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: 16px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
-  .upload-zone:hover, .upload-zone.drag { border-color: var(--brand); background: #FFFBEB; }
+  .panel h2 {
+    font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; margin: 0 0 18px;
+    color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 10px; padding-bottom: 15px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  }
+  .panel h2 i { font-size: 19px; color: var(--brand); background: var(--brand-light); padding: 7px; border-radius: 10px; }
+
+  /* Top metrics */
+  .top-metrics-grid { display: flex; gap: 24px; margin-bottom: 12px; flex-wrap: wrap; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 0 0 350px; }
+  .grade-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; flex: 1; min-width: 300px; }
+
+  .stat-card {
+    background: rgba(255,255,255,0.85); border-radius: 18px; padding: 18px 20px;
+    box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+    border: 1px solid rgba(255,255,255,1);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-float); }
+  .stat-card::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
+  .stat-card.perfect::after { background: var(--success); }
+  .stat-card.good::after { background: var(--good); }
+  .stat-card.needimprove::after { background: var(--warning); }
+  .stat-card.bad::after { background: var(--bad); }
+  .stat-card.poor::after { background: var(--danger); }
+
+  .stat-card .lbl { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .stat-card .val { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; margin-top: 10px; color: var(--text-main); line-height: 1; }
+  .stat-card .upd { font-size: 11px; color: #94A3B8; margin-top: 8px; font-weight: 500; }
+  .stat-card .pct { font-size: 12px; font-weight: 700; margin-top: 8px; padding: 3px 9px; border-radius: 12px; background: #F8FAFC; display: inline-block; width: fit-content; }
+
+  .stat-card.perfect .val { color: var(--success); } .stat-card.perfect .pct { color: var(--success); background: var(--success-light); }
+  .stat-card.good .val { color: var(--good); } .stat-card.good .pct { color: var(--good); background: var(--good-light); }
+  .stat-card.needimprove .val { color: var(--warning); } .stat-card.needimprove .pct { color: var(--warning); background: var(--warning-light); }
+  .stat-card.bad .val { color: var(--bad); } .stat-card.bad .pct { color: var(--bad); background: var(--bad-light); }
+  .stat-card.poor .val { color: var(--danger); } .stat-card.poor .pct { color: var(--danger); background: var(--danger-light); }
+
+  /* Buttons & inputs */
+  button {
+    background: rgba(255,255,255,0.8); color: var(--text-main); border: 1px solid var(--border-light);
+    padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(4px);
+  }
+  button:hover { background: #FFFFFF; border-color: var(--brand); color: #B48300; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  button.primary { background: var(--brand); color: #3B2504; border-color: var(--brand); box-shadow: 0 4px 12px rgba(245, 180, 0, 0.25); }
+  button.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); color: #3B2504; box-shadow: 0 6px 16px rgba(245, 180, 0, 0.35); }
+  button.danger { background: var(--danger-light); border-color: #FCA5A5; color: var(--danger); }
+  button.rejoin { background: var(--success-light); border-color: #A7F3D0; color: #047857; }
+
+  input, select, textarea {
+    background: rgba(255,255,255,0.85); border: 1px solid #E2E8F0; color: var(--text-main);
+    border-radius: 11px; padding: 10px 14px; font-size: 13px; transition: all 0.2s; outline: none; font-family: inherit;
+    backdrop-filter: blur(4px);
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--brand); background: #FFF; box-shadow: 0 0 0 4px rgba(245, 180, 0, 0.15); }
+  textarea { width: 100%; min-height: 80px; font-family: 'JetBrains Mono', monospace; margin-top: 10px; }
+
+  .toolbar { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* Upload zone */
+  .upload-zone { border: 2px dashed #CBD5E1; background: rgba(248,250,252,0.7); border-radius: 18px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--brand); background: var(--brand-light); }
   .upload-zone i { font-size: 36px; color: var(--brand); }
   .upload-zone .main-txt { font-weight: 600; margin-top: 12px; color: var(--text-main); font-size: 15px; }
   .upload-zone .sub-txt { color: var(--text-muted); font-size: 12.5px; margin-top: 6px; }
   .upload-status { margin-top: 12px; font-size: 13.5px; font-weight: 500; }
-  .upload-status.ok { color: #059669; } .upload-status.err { color: #DC2626; }
-
+  .upload-status.ok { color: var(--success); } .upload-status.err { color: var(--danger); }
   .manual-toggle { margin-top: 16px; }
   .manual-toggle summary { cursor: pointer; color: var(--text-muted); font-size: 13px; font-weight: 500; }
-  
-  /* Buttons & Inputs */
-  button { 
-    background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; 
-    padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 600; 
-    cursor: pointer; display: inline-flex; align-items: center; gap: 8px; 
-    transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.02); 
-  }
-  button:hover { border-color: var(--brand); background: #FFFBEB; color: #B48300; transform: translateY(-1px); }
-  button.primary { background: var(--brand); color: #3B2504; border-color: var(--brand); box-shadow: 0 4px 12px rgba(245, 180, 0, 0.2); }
-  button.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); color: #3B2504; }
-  button.danger { background: #FEF2F2; border-color: #FCA5A5; color: #B91C1C; }
-  
-  input, select, textarea {
-    background: #F8FAFC; border: 1px solid var(--border-light); color: var(--text-main);
-    border-radius: 10px; padding: 10px 14px; font-size: 13px; transition: all 0.2s; outline: none; font-family: inherit;
-  }
-  input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(245, 180, 0, 0.15); }
-  textarea { width: 100%; min-height: 80px; font-family: 'JetBrains Mono', monospace; margin-top: 10px; }
-  
-  .toolbar { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* Tables */
+  .table-scroll { max-height: 70vh; overflow-y: auto; overflow-x: auto; border-radius: 18px; background: rgba(255,255,255,0.7); box-shadow: inset 0 0 0 1px #E2E8F0; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+  thead th { position: sticky; top: 0; background: #F8FAFC; z-index: 2; padding: 14px 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; border-bottom: 2px solid #E2E8F0; }
+  th, td { padding: 14px 16px; text-align: center; border-bottom: 1px solid #F1F5F9; }
+  td.name { text-align: left; font-weight: 600; }
+  td.name input, td.store input { width: 100%; text-align: left; }
+  tbody tr { transition: background 0.2s; }
+  tbody tr:hover { background: rgba(248,250,252,0.8); }
+  .rm { background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 18px; padding: 4px 8px; box-shadow: none; }
+  .rm:hover { color: var(--danger); background: transparent; transform: none; }
+
+  .filter-bar { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; background: rgba(248,250,252,0.7); padding: 16px 20px; border-radius: 18px; border: 1px solid #E2E8F0; }
+  .filter-field { display: flex; flex-direction: column; gap: 6px; }
+  .filter-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
+  .filter-count { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: auto; }
 
   /* Podium */
-  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 12px; padding: 10px 0 0; }
-  .podium-card { flex: 1; max-width: 120px; text-align: center; }
-  .avatar { width: 54px; height: 54px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; border: 3px solid #FFF; box-shadow: 0 6px 12px rgba(0,0,0,0.08); position: relative; }
-  .rank-badge { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  
-  .p1 .avatar { background: #FEF3C7; color: #92400E; } .p1 .rank-badge { background: #F5B400; color: #3B2504; }
-  .p2 .avatar { background: #F1F5F9; color: #475569; } .p2 .rank-badge { background: #CBD5E1; color: #1E293B; }
-  .p3 .avatar { background: #FFEDD5; color: #9A5B26; } .p3 .rank-badge { background: #D89A6A; color: #3A1F0C; }
-  
-  .podium-bar { border-radius: 16px 16px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 12px; }
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 16px 0 0; }
+  .podium-card { flex: 1; max-width: 130px; text-align: center; transition: transform 0.3s; }
+  .podium-card:hover { transform: translateY(-4px); }
+  .avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; border: 4px solid #FFF; box-shadow: var(--shadow-md); position: relative; }
+  .rank-badge { position: absolute; top: -5px; right: -5px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+  .p1 .avatar { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; } .p1 .rank-badge { background: var(--brand); color: #3B2504; }
+  .p2 .avatar { background: linear-gradient(135deg, #F8FAFC, #E2E8F0); color: #475569; } .p2 .rank-badge { background: #CBD5E1; color: #1E293B; }
+  .p3 .avatar { background: linear-gradient(135deg, #FFEDD5, #FED7AA); color: #9A5B26; } .p3 .rank-badge { background: #D89A6A; color: #3A1F0C; }
+
+  .podium-bar { border-radius: 18px 18px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 14px; margin-top: 8px; }
   .podium-bar .pt { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; }
-  .b1 { height: 110px; background: linear-gradient(180deg, #FDE68A 0%, #F5B400 100%); color: #3B2504; box-shadow: 0 -4px 16px rgba(245,180,0,0.3); }
-  .b2 { height: 85px; background: linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%); color: #1E293B; box-shadow: 0 -4px 12px rgba(148,163,184,0.15); }
-  .b3 { height: 70px; background: linear-gradient(180deg, #F3D0AC 0%, #D89A6A 100%); color: #3A1F0C; box-shadow: 0 -4px 12px rgba(216,154,106,0.15); }
-  
-  .podium-name { margin-top: 12px; font-weight: 600; font-size: 13px; color: var(--text-main); }
+  .b1 { height: 118px; background: linear-gradient(180deg, #FDE68A 0%, #F5B400 100%); color: #3B2504; box-shadow: 0 -8px 20px rgba(245,180,0,0.3); }
+  .b2 { height: 92px; background: linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%); color: #1E293B; box-shadow: 0 -8px 18px rgba(148,163,184,0.15); }
+  .b3 { height: 74px; background: linear-gradient(180deg, #FED7AA 0%, #D89A6A 100%); color: #3A1F0C; box-shadow: 0 -8px 18px rgba(216,154,106,0.15); }
+
+  .podium-name { margin-top: 14px; font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.3; }
   .podium-store { color: var(--text-muted); font-size: 11px; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .p1 { order: 2; } .p2 { order: 1; } .p3 { order: 3; }
+  .p1 { order: 2; z-index: 2; } .p2 { order: 1; } .p3 { order: 3; }
 
   /* Leaderboard */
-  #leaderboard { max-height: 400px; overflow-y: auto; padding-right: 6px; margin-right: -6px; }
-  .leaderboard-row { display: grid; grid-template-columns: 28px 1fr 64px 85px; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #F1F5F9; }
-  .leaderboard-row:last-child { border-bottom: none; }
-  .lb-rank { font-family: 'JetBrains Mono', monospace; color: #94A3B8; font-size: 13px; text-align: center; font-weight: 600; }
-  .lb-track { background: #F1F5F9; border-radius: 8px; height: 30px; position: relative; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-  .lb-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; white-space: nowrap; overflow: hidden; }
-  .lb-fill.perfect { background: linear-gradient(90deg, #047857, #059669); }
-  .lb-fill.good { background: linear-gradient(90deg, #65A30D, #84CC16); }
-  .lb-fill.needimprove { background: linear-gradient(90deg, #D97706, #F59E0B); }
-  .lb-fill.bad { background: linear-gradient(90deg, #C2410C, #F97316); }
-  .lb-fill.poor { background: linear-gradient(90deg, #B91C1C, #DC2626); }
-  .lb-fill .nm { font-size: 12.5px; font-weight: 600; color: #FFFFFF; }
-  .lb-fill.good .nm, .lb-fill.needimprove .nm { color: #2A1B02; }
-  .lb-pt { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; text-align: right; color: var(--text-main); }
+  #leaderboard { max-height: 460px; overflow-y: auto; padding-right: 10px; }
+  .leaderboard-row {
+    display: grid; grid-template-columns: 30px minmax(0,1.5fr) minmax(60px,1fr) auto 80px; align-items: center; gap: 12px;
+    padding: 10px 10px; border-radius: 14px; transition: background 0.2s; margin-bottom: 2px;
+  }
+  .leaderboard-row:hover { background: rgba(255,255,255,0.7); }
+  .lb-rank { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 13px; text-align: center; font-weight: 700; }
+  .lb-name { font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.3; word-break: break-word; }
+  .lb-name .lb-store, .lb-store { display: block; color: #94A3B8; font-size: 11px; font-weight: 500; margin-top: 2px; }
+  .lb-track { background: #F1F5F9; border-radius: 12px; height: 16px; position: relative; overflow: hidden; min-width: 40px; }
+  .lb-fill { height: 100%; border-radius: 12px; transition: width 0.6s ease-out; }
+  .lb-fill.perfect { background: var(--success); }
+  .lb-fill.good { background: var(--good); }
+  .lb-fill.needimprove { background: var(--warning); }
+  .lb-fill.bad { background: var(--bad); }
+  .lb-fill.poor { background: var(--danger); }
+  .lb-pt { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; text-align: right; color: var(--text-main); }
 
-  .rank-delta { display: inline-flex; align-items: center; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700; padding: 4px 8px; border-radius: 20px; white-space: nowrap; }
+  .rank-delta { display: inline-flex; align-items: center; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 20px; white-space: nowrap; }
   .rank-delta i { font-size: 12px; }
   .rank-delta.up { background: #DCFCE7; color: #15803D; }
   .rank-delta.down { background: #FEE2E2; color: #B91C1C; }
   .rank-delta.same { background: #F1F5F9; color: #64748B; }
   .rank-delta.new { background: #EFF6FF; color: #2563EB; }
 
-  /* Watchlist & Alerts */
-  .watch-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #FEF2F2; border-radius: 12px; margin-bottom: 10px; border: 1px solid #FECACA; }
+  @media(max-width: 640px) {
+    .leaderboard-row { grid-template-columns: 24px minmax(0,1fr) 58px; column-gap: 8px; }
+    .leaderboard-row .lb-track, .leaderboard-row .rank-delta { display: none; }
+  }
+
+  /* Grade pill */
+  .grade { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-block; }
+  .grade.perfect { background: var(--success); color: #FFFFFF; }
+  .grade.good { background: var(--good); color: #1A2E05; }
+  .grade.needimprove { background: var(--warning); color: #FFFFFF; }
+  .grade.bad { background: var(--bad); color: #FFFFFF; }
+  .grade.poor { background: var(--danger); color: #FFFFFF; }
+
+  /* Watchlist & alerts */
+  .watch-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--danger-light); border-radius: 14px; margin-bottom: 10px; border: 1px solid #FECACA; }
   .watch-left { display: flex; align-items: center; gap: 12px; }
-  .watch-left i { color: #DC2626; font-size: 20px; }
+  .watch-left i { color: var(--danger); font-size: 20px; }
   .watch-name { font-weight: 700; font-size: 14px; color: #991B1B; }
   .watch-store { color: #B91C1C; font-size: 12px; margin-top: 2px; }
-  .watch-grade { font-size: 11px; color: #DC2626; margin-top: 4px; font-weight: 600; }
-  .watch-pt { font-family: 'JetBrains Mono', monospace; color: #DC2626; font-weight: 700; font-size: 20px; }
+  .watch-grade { font-size: 11px; color: var(--danger); margin-top: 4px; font-weight: 600; }
+  .watch-pt { font-family: 'JetBrains Mono', monospace; color: var(--danger); font-weight: 700; font-size: 20px; }
 
-  .alert-list { display: grid; gap: 10px; } 
-  .alert-item { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 12px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-  .alert-item i { font-size: 20px; } 
-  .alert-item strong { font-size: 13.5px; display: block; margin-bottom: 4px; } 
+  .alert-list { display: grid; gap: 10px; }
+  .alert-item { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 14px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+  .alert-item i { font-size: 20px; }
+  .alert-item strong { font-size: 13.5px; display: block; margin-bottom: 4px; }
   .alert-item div { font-size: 12px; line-height: 1.4; }
-  .alert-item.critical { background: #FEF2F2; color: #991B1B; } .alert-item.critical div { color: #B91C1C; }
-  .alert-item.warning { background: #FFFBEB; color: #92400E; } .alert-item.warning div { color: #B45309; }
-  .alert-item.good { background: #F0FDF4; color: #166534; } .alert-item.good div { color: #15803D; }
+  .alert-item.critical { background: var(--danger-light); color: #991B1B; } .alert-item.critical div { color: #B91C1C; }
+  .alert-item.warning { background: var(--warning-light); color: #92400E; } .alert-item.warning div { color: #B45309; }
+  .alert-item.good { background: var(--success-light); color: #166534; } .alert-item.good div { color: #15803D; }
 
-  /* Tables & Filters */
-  .filter-bar { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; background: #F8FAFC; padding: 16px 20px; border-radius: 16px; border: 1px solid #E2E8F0; }
-  .filter-field { display: flex; flex-direction: column; gap: 6px; }
-  .filter-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
-  .filter-count { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: auto; }
-  
-  .table-scroll { max-height: 70vh; overflow-y: auto; overflow-x: auto; border-radius: 12px; box-shadow: 0 0 0 1px #E2E8F0; }
-  .history-scroll { max-height: 70vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 0 0 1px #E2E8F0; padding: 8px 12px; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
-  thead th { position: sticky; top: 0; background: #F8FAFC; z-index: 2; box-shadow: inset 0 -1px 0 #E2E8F0, 0 1px 0 #E2E8F0; }
-  th, td { padding: 12px 14px; text-align: center; border-bottom: 1px solid #F1F5F9; }
-  th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
-  td.name, th.name { text-align: left; }
-  tbody tr:hover td { background: #F8FAFC; }
-  td input { width: 60px; text-align: center; }
-  td.name input, td.store input { width: 100%; text-align: left; }
-  
-  .grade { padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; white-space: nowrap; }
-  .grade.perfect { background: #059669; color: #FFFFFF; }
-  .grade.good { background: #84CC16; color: #1A2E05; }
-  .grade.needimprove { background: #F59E0B; color: #3B2504; }
-  .grade.bad { background: #F97316; color: #FFFFFF; }
-  .grade.poor { background: #DC2626; color: #FFFFFF; }
-  .rm { background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 18px; padding: 4px 8px; box-shadow: none; }
-  .rm:hover { color: #DC2626; background: transparent; transform: none; }
-
-  /* Sub Panels / Insights */
   .insight-grid { display: flex; flex-direction: column; gap: 12px; }
-  .insight-card { border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px; }
+  .insight-card { border: 1px solid #E2E8F0; border-radius: 16px; padding: 16px; background: rgba(255,255,255,0.5); }
   .insight-card h3 { margin: 0 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: var(--text-main); }
   .insight-card .big { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; }
   .insight-card .muted { color: var(--text-muted); font-size: 12px; margin-top: 6px; font-weight: 500; }
-  .insight-card.gain { background: #F0FDF4; border-color: #BBF7D0; } 
-  .insight-card.drop { background: #FEF2F2; border-color: #FECACA; }
-  
+  .insight-card.gain { background: var(--success-light); border-color: #BBF7D0; }
+  .insight-card.drop { background: var(--danger-light); border-color: #FECACA; }
+  @media(max-width: 1024px) { .insight-grid { flex-direction: row; flex-wrap: wrap; } .insight-card { flex: 1; min-width: 200px; } }
+
+  /* Mobile leader */
+  .mobile-leader { display: none; }
+  @media(max-width: 1024px) { .mobile-leader { display: block; } }
+  .mobile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mobile-kpi { background: rgba(248,250,252,0.7); border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px; }
+  .mobile-kpi .k { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+  .mobile-kpi .v { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; margin-top: 6px; }
+  .focus-box { margin-top: 16px; padding: 14px; border-radius: 14px; background: var(--brand-light); border: 1px solid #FDE68A; }
+  .focus-box b { font-size: 13px; color: #92400E; } .focus-box div { font-size: 13px; margin-top: 6px; color: #B45309; line-height: 1.4; }
+
+  /* Utils */
+  .empty { color: #94A3B8; font-size: 14px; text-align: center; padding: 32px 0; font-weight: 500; }
+  .empty i { display: block; font-size: 32px; margin-bottom: 12px; opacity: 0.5; }
+  .readonly-val { font-size: 13px; color: #334155; }
+  .clickable-name { cursor: pointer; transition: color 0.2s; }
+  .clickable-name:hover { color: var(--brand); font-weight: 700; }
+
+  /* Modal (real gating via body.gated, kept from working logic) */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal-box { background: #FFFFFF; border-radius: 24px; padding: 28px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-float); }
+  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+  .modal-sub { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+  .modal-close { border: none; background: #F1F5F9; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: none; font-size: 16px; }
+  .modal-close:hover { background: #E2E8F0; transform: none; }
+  .modal-list-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px; }
+  .modal-breakdown { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 16px 0; }
+  .break-row { display: grid; grid-template-columns: 100px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; font-weight: 500; }
+  .break-track { height: 8px; background: #E2E8F0; border-radius: 10px; overflow: hidden; }
+  .break-fill { height: 100%; background: var(--brand); border-radius: 10px; }
+  .modal-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+  .modal-kpi { padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; text-align: center; }
+  .modal-kpi b { display: block; font-family: 'JetBrains Mono', monospace; font-size: 18px; margin-bottom: 2px; }
+  .modal-kpi span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+
+  /* Store compare / score grid */
+  .store-compare-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .store-chip { font-size: 12.5px; padding: 6px 14px; border-radius: 20px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; color: #475569; font-weight: 600; transition: all 0.2s; }
+  .store-chip:hover { border-color: var(--text-main); }
+  .store-chip.active { background: var(--text-main); color: #FFFFFF; border-color: var(--text-main); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .store-compare-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+  .store-compare-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .store-compare-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
   .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .score-card { border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s; cursor: pointer; }
+  .score-card { border: 1px solid #E2E8F0; border-radius: 16px; padding: 18px; background: rgba(255,255,255,0.75); box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.2s; cursor: pointer; }
   .score-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.05); border-color: var(--brand); }
   .score-name.clickable-name:hover { color: var(--brand); }
   .score-hint { font-size: 10.5px; color: #94A3B8; margin-top: 10px; display: flex; align-items: center; gap: 4px; font-weight: 500; }
   .score-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-  .score-name { font-weight: 700; font-size: 13.5px; line-height: 1.4; } 
+  .score-name { font-weight: 700; font-size: 13.5px; line-height: 1.4; }
   .score-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 22px; color: var(--brand); }
-  .score-bar { height: 8px; background: #F1F5F9; border-radius: 20px; overflow: hidden; margin: 12px 0 10px; } 
+  .score-bar { height: 8px; background: #F1F5F9; border-radius: 20px; overflow: hidden; margin: 12px 0 10px; }
   .score-bar span { display: block; height: 100%; background: var(--brand); border-radius: 20px; }
   .score-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11.5px; font-weight: 500; }
+  .store-worst td { background: rgba(254,242,242,0.5); }
 
-  /* History Snapshots */
+  /* History / snapshots */
+  .history-scroll { max-height: 70vh; overflow-y: auto; border-radius: 14px; box-shadow: 0 0 0 1px #E2E8F0; padding: 8px 12px; }
   .snap-item { display: block; padding: 14px 8px; border-bottom: 1px dashed #E2E8F0; font-size: 13.5px; }
   .snap-item:last-child { border-bottom: none; }
   .snap-top { display: flex; justify-content: space-between; align-items: center; }
@@ -303,35 +398,8 @@
   .snap-trend.same { background: #F1F5F9; color: var(--text-muted); }
   .snap-toggle { cursor: pointer; color: #94A3B8; font-size: 12px; margin-top: 8px; font-weight: 500; }
   .snap-toggle:hover { color: var(--brand); }
-  .snap-body { margin-top: 14px; padding: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; }
-  
-  .history-summary { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; font-size: 13px; color: var(--text-muted); background: #F8FAFC; padding: 16px; border-radius: 12px; }
-  .history-summary b { color: var(--text-main); font-size: 14px; }
-  .sparkline-wrap { margin-bottom: 20px; } .sparkline-wrap svg { width: 100%; height: 70px; display: block; }
-  
-  /* Utils */
-  .empty { color: #94A3B8; font-size: 14px; text-align: center; padding: 32px 0; font-weight: 500; }
-  .empty i { display: block; font-size: 32px; margin-bottom: 12px; opacity: 0.5; }
-  .readonly-val { font-size: 13px; color: #334155; }
-  .clickable-name { cursor: pointer; transition: color 0.2s; }
-  .clickable-name:hover { color: var(--brand); font-weight: 700; }
-  
-  /* Modal */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; transition: opacity 0.2s; }
-  .modal-box { background: #FFFFFF; border-radius: 20px; padding: 28px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-  .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-main); }
-  .modal-sub { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
-  .modal-close { border: none; background: #F1F5F9; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: none; font-size: 16px; }
-  .modal-close:hover { background: #E2E8F0; transform: none; }
-  
-  /* Store Compare Controls */
-  .store-compare-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-  .store-chip { font-size: 12.5px; padding: 6px 14px; border-radius: 20px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; color: #475569; font-weight: 600; transition: all 0.2s; }
-  .store-chip:hover { border-color: var(--text-main); }
-  .store-chip.active { background: var(--text-main); color: #FFFFFF; border-color: var(--text-main); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
-  /* Misc specific components */
+  .snap-body { margin-top: 14px; padding: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; }
+  .snap-nodetail { color: #94A3B8; font-size: 12.5px; }
   .snap-grade-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
   .snap-grade-chip { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
   .snap-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -340,48 +408,65 @@
   .snap-mover-card .mv-name { font-size: 13.5px; font-weight: 700; color: var(--text-main); margin-top: 4px; }
   .snap-mover-card .mv-delta { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; margin-top: 4px; }
   .snap-mover-card.gain .mv-delta { color: #15803D; } .snap-mover-card.drop .mv-delta { color: #B91C1C; }
-  
-  .mover-list { display: grid; gap: 8px; } 
-  .mover-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2E8F0; } 
+  .mover-list { display: grid; gap: 8px; }
+  .mover-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2E8F0; }
   .mover-row .nm { font-size: 13px; font-weight: 600; } .mover-row .delta { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12.5px; }
-  
-  .modal-list-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #F1F5F9; font-size: 13px; }
-  .modal-breakdown { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 16px 0; } 
-  .break-row { display: grid; grid-template-columns: 100px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; font-weight: 500; } 
-  .break-track { height: 8px; background: #E2E8F0; border-radius: 10px; overflow: hidden; } 
-  .break-fill { height: 100%; background: var(--brand); border-radius: 10px; }
-  .modal-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; } 
-  .modal-kpi { padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; text-align: center; } 
-  .modal-kpi b { display: block; font-family: 'JetBrains Mono', monospace; font-size: 18px; margin-bottom: 2px; } 
-  .modal-kpi span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
-  
-  .focus-box { margin-top: 16px; padding: 14px; border-radius: 12px; background: #FFFBEB; border: 1px solid #FDE68A; } 
-  .focus-box b { font-size: 13px; color: #92400E; } .focus-box div { font-size: 13px; margin-top: 6px; color: #B45309; line-height: 1.4; }
+  .history-summary { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; font-size: 13px; color: var(--text-muted); background: #F8FAFC; padding: 16px; border-radius: 14px; }
+  .history-summary b { color: var(--text-main); font-size: 14px; }
+  .sparkline-wrap { margin-bottom: 20px; } .sparkline-wrap svg { width: 100%; height: 70px; display: block; }
 
-  /* Mobile Leader specific */
-  .mobile-leader { display: none; }
-  .mobile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; } 
-  .mobile-kpi { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; } 
-  .mobile-kpi .k { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; } 
-  .mobile-kpi .v { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; margin-top: 6px; }
-  
-  /* Responsive Breakpoints */
+  /* ===== Monthly archive / status controls ===== */
+  .month-tools { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 12px; margin: 14px 0 18px; }
+  .month-tools .tool-card { background: rgba(248,250,252,0.7); border: 1px solid #E2E8F0; border-radius: 16px; padding: 14px; }
+  .tool-card label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 700; margin-bottom: 7px; }
+  .tool-card select, .tool-card input { width: 100%; }
+  .upload-mode { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .mode-choice { position: relative; }
+  .mode-choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .mode-choice label { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 12px; background: #fff; color: #475569; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .mode-choice input:checked + label { background: var(--brand-light); border-color: var(--brand); color: #92400E; }
+  .archive-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; padding: 4px 8px; border-radius: 999px; background: #EFF6FF; color: #2563EB; font-weight: 700; }
+  .active-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; padding: 4px 8px; border-radius: 999px; background: var(--success-light); color: #047857; font-weight: 700; }
+  .inactive-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; padding: 4px 8px; border-radius: 999px; background: #F1F5F9; color: #64748B; font-weight: 700; }
+  .compare-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .compare-kpi { background: rgba(248,250,252,0.7); border: 1px solid #E2E8F0; border-radius: 16px; padding: 15px; }
+  .compare-kpi .k { color: var(--text-muted); font-size: 10.5px; text-transform: uppercase; font-weight: 700; }
+  .compare-kpi .v { margin-top: 7px; font: 700 21px 'JetBrains Mono', monospace; }
+  .compare-table-wrap { overflow: auto; border: 1px solid #E2E8F0; border-radius: 14px; }
+  .compare-table { min-width: 900px; width: 100%; }
+  .delta-up { color: #15803D; font-weight: 700; } .delta-down { color: #B91C1C; font-weight: 700; } .delta-same { color: #64748B; font-weight: 700; }
+  .target-ach-cell { min-width: 270px; max-width: 430px; text-align: left; line-height: 1.35; font-size: 10px; vertical-align: middle; }
+  .point-category-grid { display: grid; grid-template-columns: repeat(3, minmax(70px, 1fr)); gap: 5px 8px; }
+  .point-category-grid span { display: block; padding: 4px 6px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; white-space: nowrap; }
+  .point-category-grid b { color: #475569; font-weight: 800; margin-right: 3px; }
+  .target-ach-cell b { color: #334155; }
+  .tap-wrap { display: flex; flex-direction: column; gap: 3px; white-space: normal; }
+  .tap-label { display: inline-block; min-width: 42px; font-size: 9px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: #64748B; margin-right: 3px; }
+  .tap-label.ach-label { color: #2563EB; }
+  .tap-label.point-label { color: #7C3AED; }
+  .mini-progress { height: 7px; background: #E2E8F0; border-radius: 99px; overflow: hidden; margin-top: 5px; }
+  .mini-progress span { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
+  .status-toggle { padding: 5px 10px; font-size: 10.5px; border-radius: 10px; }
+  .archive-note { padding: 12px 14px; border-radius: 14px; background: #EFF6FF; border: 1px solid #BFDBFE; color: #1D4ED8; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+
+  /* Responsive breakpoints */
   @media(max-width: 1280px) {
     .top-metrics-grid { flex-direction: column; }
     .stats { flex: auto; } .grade-stats { flex: auto; }
   }
   @media(max-width: 1024px) {
     .dashboard-layout { grid-template-columns: 1fr; }
-    .mobile-leader { display: block; }
-    .insight-grid { flex-direction: row; flex-wrap: wrap; }
-    .insight-card { flex: 1; min-width: 200px; }
+  }
+  @media(max-width: 900px) {
+    .month-tools { grid-template-columns: 1fr 1fr; }
+    .compare-kpis { grid-template-columns: 1fr 1fr; }
   }
   @media(max-width: 800px) {
     .grade-stats { grid-template-columns: repeat(3, 1fr); }
   }
   @media(max-width: 560px) {
     body { padding: 16px 10px 40px; }
-    .hero { flex-direction: column; align-items: flex-start; }
+    .hero { flex-direction: column; align-items: flex-start; padding: 20px; }
     .hero-right { width: 100%; justify-content: space-between; }
     .stats { grid-template-columns: 1fr 1fr; }
     .grade-stats { grid-template-columns: 1fr 1fr; }
@@ -390,9 +475,12 @@
     .filter-field select, .search-input { width: 100%; }
     .date-tools { display: grid; grid-template-columns: 1fr 1fr; }
     .podium { gap: 8px; } .podium-card { max-width: 33%; }
+    .month-tools { grid-template-columns: 1fr; }
+    .compare-kpis { grid-template-columns: 1fr 1fr; }
+    .stat-card .val { font-size: 24px; }
   }
 
-  /* Admin Gate logic */
+  /* Admin gate logic (real, wired to JS body.classList) */
   body.gated .wrap { display: none; }
   #viewGate { display: none; }
   body.gated #viewGate { display: flex; }
@@ -405,6 +493,92 @@
     #adminPanel, .toolbar, .filter-bar, .hero-right, .upload-status { display: none !important; }
     .table-scroll, .history-scroll { max-height: none !important; overflow: visible !important; }
     body { background: #FFFFFF; padding: 0; }
+  }
+
+  /* =========================================
+     DARK MODE THEME OVERRIDES
+  ========================================= */
+  [data-theme="dark"] {
+    --bg-body: #0F172A;
+    --panel-bg: #1E293B;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border-light: #334155;
+  }
+
+  [data-theme="dark"] body {
+    background-image: none;
+  }
+
+  [data-theme="dark"] .stat-card,
+  [data-theme="dark"] .panel,
+  [data-theme="dark"] .app-sidebar,
+  [data-theme="dark"] .hero,
+  [data-theme="dark"] .modal-box,
+  [data-theme="dark"] .upload-zone,
+  [data-theme="dark"] .score-card,
+  [data-theme="dark"] .insight-card,
+  [data-theme="dark"] .snap-mover-card,
+  [data-theme="dark"] .mover-row,
+  [data-theme="dark"] .snap-body,
+  [data-theme="dark"] .history-summary,
+  [data-theme="dark"] .filter-bar,
+  [data-theme="dark"] .modal-kpi,
+  [data-theme="dark"] .mobile-kpi,
+  [data-theme="dark"] .compare-kpi,
+  [data-theme="dark"] .tool-card {
+    background: var(--panel-bg);
+    border-color: var(--border-light);
+  }
+
+  [data-theme="dark"] h1,
+  [data-theme="dark"] .panel h2,
+  [data-theme="dark"] .sidebar-brand,
+  [data-theme="dark"] .stat-card .val,
+  [data-theme="dark"] .score-name,
+  [data-theme="dark"] .lb-name,
+  [data-theme="dark"] .modal-title,
+  [data-theme="dark"] .main-txt,
+  [data-theme="dark"] .lb-pt,
+  [data-theme="dark"] .history-summary b,
+  [data-theme="dark"] .readonly-val {
+    color: var(--text-main) !important;
+  }
+
+  [data-theme="dark"] .nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  [data-theme="dark"] .nav-item.active {
+    background: rgba(245, 180, 0, 0.1);
+    color: var(--brand);
+  }
+
+  [data-theme="dark"] input,
+  [data-theme="dark"] select,
+  [data-theme="dark"] textarea {
+    background: #0F172A;
+    border-color: var(--border-light);
+    color: var(--text-main);
+  }
+  [data-theme="dark"] thead th {
+    background: var(--panel-bg);
+  }
+  [data-theme="dark"] th, [data-theme="dark"] td {
+    border-color: var(--border-light);
+  }
+  [data-theme="dark"] tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  [data-theme="dark"] button:not(.primary):not(.danger) {
+    background: var(--panel-bg);
+    color: var(--text-main);
+    border-color: var(--border-light);
+  }
+  [data-theme="dark"] button:not(.primary):not(.danger):hover {
+    background: rgba(245, 180, 0, 0.1);
+    color: var(--brand);
+    border-color: var(--brand);
   }
 </style>
 </head>
@@ -432,6 +606,7 @@
       <button class="nav-item" data-view="eros" onclick="switchView('eros')"><i class="ti ti-users"></i>Data ERO</button>
       <button class="nav-item" data-view="stores" onclick="switchView('stores')"><i class="ti ti-building-store"></i>Data Toko</button>
       <button class="nav-item" data-view="reports" onclick="switchView('reports')"><i class="ti ti-report"></i>Report</button>
+      <button class="nav-item" data-view="monthly" onclick="switchView('monthly')"><i class="ti ti-calendar-stats"></i>Perbandingan</button>
       <button class="nav-item" data-view="settings" id="navSettings" style="display:none;" onclick="switchView('settings')"><i class="ti ti-settings"></i>Kelola Data</button>
     </nav>
   </aside>
@@ -446,6 +621,9 @@
     </div>
     <div class="hero-right">
       <span class="mode-badge" id="modeBadge"></span>
+      <button id="themeToggle" onclick="toggleTheme()" title="Ganti Tema" style="border-radius: 50%; padding: 8px 10px;">
+        <i class="ti ti-moon" style="font-size: 18px; margin: 0;"></i>
+      </button>
       <button id="adminBtn" onclick="toggleAdmin()"><i class="ti ti-lock"></i><span id="adminBtnLabel">Login Admin</span></button>
     </div>
   </div>
@@ -513,14 +691,48 @@
   </div>
   <!-- /DASHBOARD VIEW -->
 
+  <!-- MONTHLY COMPARISON VIEW -->
+  <div class="view-section" data-view-section="monthly">
+    <div class="panel">
+      <h2><i class="ti ti-calendar-stats"></i>Perbandingan Bulan Sebelumnya vs Bulan Berjalan</h2>
+      <div class="archive-note">Gunakan halaman ini untuk melihat perubahan <b>Point, Rank, Grade, Target dan Achievement</b> per ERO. Data arsip tidak mengubah data aktif bulan berjalan.</div>
+      <div class="filter-bar" style="margin-bottom:14px;">
+        <div class="filter-field" style="min-width:240px;"><label>Bulan Sebelumnya</label><select id="archiveSelect" onchange="renderMonthlyCompare()"></select></div>
+        <div class="filter-field"><label>Bulan Berjalan</label><div id="currentMonthLabel" class="readonly-val" style="padding:10px 0;font-weight:700;"></div></div>
+      </div>
+      <div id="monthlyKpis" class="compare-kpis"></div>
+      <div id="monthlyCompareTable" class="compare-table-wrap"></div>
+    </div>
+  </div>
+  <!-- /MONTHLY COMPARISON VIEW -->
+
   <!-- SETTINGS VIEW (kelola data, admin only) -->
   <div class="view-section" data-view-section="settings">
       <div class="panel" id="adminPanel" style="display:none;">
-        <h2><i class="ti ti-upload"></i>Update Data Harian</h2>
+        <h2><i class="ti ti-upload"></i>Update Data & Arsip Bulanan</h2>
+        <div class="archive-note"><b>Alur baru:</b> pilih <b>Data Berjalan</b> untuk mengganti dashboard aktif. Pilih <b>Arsip Bulan Sebelumnya</b> untuk menyimpan data bulan lalu tanpa mengganggu ranking bulan berjalan.</div>
+        <div class="upload-mode">
+          <div class="mode-choice"><input type="radio" id="uploadCurrent" name="uploadMode" value="current" checked onchange="updateUploadModeUI()"><label for="uploadCurrent"><i class="ti ti-refresh"></i>Data Berjalan</label></div>
+          <div class="mode-choice"><input type="radio" id="uploadArchive" name="uploadMode" value="archive" onchange="updateUploadModeUI()"><label for="uploadArchive"><i class="ti ti-archive"></i>Arsip Bulan Sebelumnya</label></div>
+        </div>
+        <div class="month-tools">
+          <div class="tool-card" id="archiveMonthCard" style="display:none;">
+            <label>Bulan Arsip</label>
+            <input type="month" id="archiveMonth">
+          </div>
+          <div class="tool-card">
+            <label>Mode Ranking</label>
+            <select id="rankMode"><option value="active">ERO aktif saja</option><option value="all">Semua ERO</option></select>
+          </div>
+          <div class="tool-card">
+            <label>Tips</label>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.45;">ERO resign bisa dinonaktifkan dari tabel Data ERO. ERO nonaktif tidak masuk ranking.</div>
+          </div>
+        </div>
         <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
           <i class="ti ti-file-spreadsheet"></i>
           <div class="main-txt">Klik atau seret file Excel ke sini</div>
-          <div class="sub-txt">Format sama seperti dashboard_1.xlsx — mendukung .xlsx dan .xls</div>
+          <div class="sub-txt">Membaca Target, Achievement, Est %, Point, Grade dan Store dari file Excel.</div>
           <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
         </div>
         <div id="uploadStatus" class="upload-status"></div>
@@ -573,8 +785,7 @@
           <table id="dataTable">
             <thead>
               <tr>
-                <th class="name">Nama</th><th>Device</th><th>Acc</th><th>Operator</th><th>Boltech</th>
-                <th>AR Acc</th><th>AR Boltech</th><th>Total</th><th>Grade</th><th>Progres</th><th>Store</th><th></th>
+                <th class="name">Nama</th><th>Point per Category</th><th>Grade</th><th>Progres</th><th>Rank</th><th>Status</th><th>Store</th><th></th>
               </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -664,70 +875,35 @@
 </div>
 
 <script>
+// =========================================
+// LOGIKA DARK MODE / LIGHT MODE
+// =========================================
+function toggleTheme() {
+  const htmlEl = document.documentElement;
+  const currentTheme = htmlEl.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  htmlEl.setAttribute('data-theme', newTheme);
+  localStorage.setItem('dashboard-theme', newTheme);
+  updateThemeIcon(newTheme);
+}
+function updateThemeIcon(theme) {
+  const themeIcon = document.querySelector('#themeToggle i');
+  if (themeIcon) {
+    themeIcon.className = theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  }
+}
+(function initTheme(){
+  const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+})();
+
 let rows = [];
 let lastUpdateLabel = '';
 let lastWithTotals = [];
 const fields = ['device','acc','operator','boltech','arAcc','arBoltech'];
 
-const SEED = [
-  ['Arsita Winanafsi Radita Debbi',2,3,1,1,0.5,1,'IBOX SOEKARNO HATTA MALANG'],
-  ['Nur Fadhilah',3,3,1,0,1,0.5,'ERAFONE MALL ARAYA MALANG'],
-  ['Handika Dewa Tengku Firmansyah',3,3,1,0,1,0,'ERAFONE MALL ARAYA MALANG'],
-  ['Khairul Anwar',3,3,1,0,1,0,'ERAFONE & MORE TUMENGGUNG SURYO'],
-  ['Patria Rafie Alief Faiz',2,3,0,1,0.5,1,'ERAFONE RUKO DAMPIT'],
-  ['Keyzha Aprina Ferisca',3,3,1,0,0.5,0,'ERAFONE WLINGI BLITAR'],
-  ['Ketut Riani',3,3,1,0,0.5,0,'ERAFONE KESAMBEN BLITAR'],
-  ['Gandi Wirapeta',3,3,0.5,0,0.5,0.2,'ERAFONE KESAMBEN BLITAR'],
-  ['Feren Dwi Astuti',2,3,1,0,1,0,'ERAFONE & MORE SAWOJAJAR MALANG'],
-  ['Faisel Arif Mustofa Sansofyan',3,3,0,0,0.5,0.5,'IBOX SOEKARNO HATTA MALANG'],
-  ['Jonnathan Virgan Gunawan',3,3,0,0,1,0,'ERAFONE MALL ARAYA MALANG'],
-  ['Fashna Salsaqila',3,3,0,0,1,0,'ERAFONE LIPPO PLAZA BATU'],
-  ['Mustafidurrohman',3,3,1,0,0,0,'ERAFONE LIPPO PLAZA BATU'],
-  ['Sofi Aprilia Kusuma Ningrum',3,3,0.2,0,0.5,0,'ERAFONE RUKO DAMPIT'],
-  ['Anis Maulidya',3,3,0.2,0,0.5,0,'ERAFONE RUKO A YANI MALANG'],
-  ['Mohamad Hilmi Abidin',3,3,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
-  ['Irma Sofyani',3,3,0,0,0.5,0,'IBOX SOEKARNO HATTA MALANG'],
-  ['Reynaldi Dwi Himawan',3,0,1,1,0.5,1,'ERAFONE MALL ARAYA MALANG'],
-  ['Deby Yulanda',3,1.5,1,0,1,0,'ERAFONE KESAMBEN BLITAR'],
-  ['Dian Angga Pratama',3,1.5,1,0,0.5,0.5,'ERAFONE WLINGI BLITAR'],
-  ['Ferly Andika Pratama',3,3,0,0,0.2,0,'IBOX SOEKARNO HATTA MALANG'],
-  ['Mochammad Bagas Nirvana',3,3,0,0,0.2,0,'IBOX SOEKARNO HATTA MALANG'],
-  ['Roicha Firdaus',3,2,0,0,0.5,0,'ERAFONE KESAMBEN BLITAR'],
-  ['Nurul Fithri Asani',2,3,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
-  ['Nelafi Aulia Faza',0,3,1,0,1,0,'ERAFONE MAL OLYMPIC GARDEN'],
-  ['Vikry Zamzany Nugraha',0,3,0,0,1,1,'ERAFONE & MORE SAWOJAJAR MALANG'],
-  ['Mahirti Johar',3,0,0,0,1,0.5,'ERAFONE LIPPO PLAZA BATU'],
-  ['Eka Abdullah Effendy',0,3,1,0,0.5,0,'ERAFONE MAL OLYMPIC GARDEN'],
-  ['Delvi Nurhayati',3,0,1,0,0.2,0,'ERAFONE RUKO TUREN MALANG'],
-  ['Bustantheo Firdaus Mustaghfirin',3,0,0,0,1,0.2,'ERAFONE & MORE TLOGOMAS MALANG'],
-  ['Viona Hatvilillah',3,0,1,0,0,0.2,'ERAFONE RUKO PAKIS MALANG'],
-  ['Akbar Syaihidillah Afzy',3,0,0,0,1,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
-  ['Wahyu Melati',3,0,0.2,0,0.5,0,'ERAFONE RUKO TUREN MALANG'],
-  ['Nikki Nur Hidayat',2,0,1,0,0.2,0.5,'ERAFONE RUKO PAKIS MALANG'],
-  ['Vina Ismatul Maula',3,0,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
-  ['Devi Agustin Yuliyanti',3,0,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
-  ['Muhamad Huanka Alifiansyah Frediawan',3,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
-  ['Hansah Saiful Huda',3,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
-  ['Atrisa Diasetyani',3,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
-  ['Dimas Ananda Saputra',0,1.5,0,0,0.5,1,'ERAFONE RUKO DAMPIT'],
-  ['Wahyu Wardana',2,0,0,0,0.5,0,'ERAFONE RUKO BLITAR'],
-  ['Muhammad Zallum',2,0,0,0,0.5,0,'ERAFONE RUKO TUREN MALANG'],
-  ['Didik Priyantoro',0,0,1,0,1,0,'ERAFONE & MORE TLOGOMAS MALANG'],
-  ['Arik Pandika',0,0,1,0,0.5,0.2,'ERAFONE & MORE SAWOJAJAR MALANG'],
-  ['Wenike Kresta Diva',0,0,1,0,0.5,0,'ERAFONE RUKO A YANI MALANG'],
-  ['Alifi Saputra',0,0,1,0,0.2,0,'ERAFONE MAL OLYMPIC GARDEN'],
-  ['Darmawan Romadhan',0,0,0,0,1,0,'ERAFONE LIPPO PLAZA BATU'],
-  ['Wahyu Eko Prasetyo',0,0,0,0,1,0,'ERAFONE & MORE TUMENGGUNG SURYO'],
-  ['Mario Ady Cahyono',0,0,0,0,0.5,0,'ERAFONE RUKO A YANI MALANG'],
-  ['Putri Wahyu Wardhani',0,0,0,0,0.5,0,'ERAFONE MAL OLYMPIC GARDEN'],
-  ['Mohamad Fahriza',0,0,0,0,0.5,0,'ERAFONE RUKO TUREN MALANG'],
-  ['Khilma Mahirotun Nadzifah',0,0,0,0,0.5,0,'XIAOMI STORE MAL OLYMPIC GARDEN'],
-  ['Amelia Agil Anggitarani',0,0,0,0,0.5,0,'ERAFONE & MORE TLOGOMAS MALANG'],
-  ['Dava Afif Kamaludin',0,0,0.2,0,0,0.2,'ERAFONE MAL OLYMPIC GARDEN'],
-  ['Novi Vitri Aningtiyas',0,0,0,0,0.2,0,'ERAFONE RUKO DAMPIT'],
-  ['Ilfan Donny Arifianto',0,0,0,0,0.2,0,'ERAFONE RUKO A YANI MALANG']
-
-].map(a=>({name:a[0], device:a[1], acc:a[2], operator:a[3], boltech:a[4], arAcc:a[5], arBoltech:a[6], store:a[7]}));
+const SEED = [{"name":"Feren Dwi Astuti","target":{"device":200000000,"acc":9000000,"operator":4000000,"boltech":7000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":31,"deviceVal":208367565,"accQty":51,"accVal":12787828,"operator":7990089,"boltechQty":4,"boltechVal":2158559,"arAcc":1.64516129032258,"arBoltech":0.129032258064516},"est":{"device":1.041837825,"acc":1.42086977777778,"operator":1.99752225,"boltech":0.308365571428571,"arAcc":1.64516129032258,"arBoltech":0.129032258064516},"device":3,"acc":3,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0.5,"store":"ERAFONE & MORE SAWOJAJAR MALANG"},{"name":"Patria Rafie Alief Faiz","target":{"device":162855000,"acc":5198000,"operator":2865000,"boltech":2166000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":25,"deviceVal":155485584,"accQty":34,"accVal":7762607,"operator":1473874,"boltechQty":4,"boltechVal":2203602,"arAcc":1.36,"arBoltech":0.16},"est":{"device":0.954748604586902,"acc":1.49338341669873,"operator":0.514441186736475,"boltech":1.01736011080332,"arAcc":1.36,"arBoltech":0.16},"device":3,"acc":3,"operator":0,"boltech":1,"arAcc":0.5,"arBoltech":1,"store":"ERAFONE RUKO DAMPIT"},{"name":"Nur Fadhilah","target":{"device":108753064,"acc":5620173,"operator":1499001,"boltech":4063045,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":17,"deviceVal":148858558,"accQty":33,"accVal":7310265,"operator":3937836,"boltechQty":2,"boltechVal":1079280,"arAcc":1.94117647058824,"arBoltech":0.117647058823529},"est":{"device":1.36877576157303,"acc":1.30071885687505,"operator":2.62697356439389,"boltech":0.265633287349759,"arAcc":1.94117647058824,"arBoltech":0.117647058823529},"device":3,"acc":3,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0.2,"store":"ERAFONE MALL ARAYA MALANG"},{"name":"Reynaldi Dwi Himawan","target":{"device":108753064,"acc":5620173,"operator":1499001,"boltech":4063045,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":15,"deviceVal":106833333,"accQty":15,"accVal":5226030,"operator":1396397,"boltechQty":3,"boltechVal":4006306,"arAcc":1,"arBoltech":0.2},"est":{"device":0.98234779849513,"acc":0.929869952401821,"operator":0.9315517467967,"boltech":0.98603535033454,"arAcc":1,"arBoltech":0.2},"device":3,"acc":2,"operator":0.5,"boltech":1,"arAcc":0.5,"arBoltech":1,"store":"ERAFONE MALL ARAYA MALANG"},{"name":"Arsita Winanafsi Radita Debbi","target":{"device":1183166149,"acc":41598200,"operator":17500000,"boltech":20000000,"arAcc":1.8,"arBoltech":0.15},"ach":{"deviceQty":63,"deviceVal":1058276580,"accQty":98,"accVal":45092799,"operator":26981534,"boltechQty":15,"boltechVal":24806303,"arAcc":1.55555555555556,"arBoltech":0.238095238095238},"est":{"device":0.894444606021263,"acc":1.0840084186335,"operator":1.54180194285714,"boltech":1.24031515,"arAcc":1.55555555555556,"arBoltech":0.238095238095238},"device":1.5,"acc":3,"operator":1,"boltech":1,"arAcc":0.5,"arBoltech":1,"store":"IBOX SOEKARNO HATTA MALANG"},{"name":"Handika Dewa Tengku Firmansyah","target":{"device":108753064,"acc":5620173,"operator":1499001,"boltech":4063045,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":14,"deviceVal":185572974,"accQty":31,"accVal":5804322,"operator":1747747,"boltechQty":1,"boltechVal":1125225,"arAcc":2.21428571428571,"arBoltech":0.0714285714285714},"est":{"device":1.7063700752376,"acc":1.03276571735425,"operator":1.16594118349487,"boltech":0.276941308796728,"arAcc":2.21428571428571,"arBoltech":0.0714285714285714},"device":3,"acc":3,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE MALL ARAYA MALANG"},{"name":"Mustafidurrohman","target":{"device":101015016,"acc":6825545,"operator":1334173,"boltech":4554536,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":19,"deviceVal":99982882,"accQty":17,"accVal":11650261,"operator":2207206,"boltechQty":1,"boltechVal":359459,"arAcc":0.894736842105263,"arBoltech":0.0526315789473684},"est":{"device":0.9897823705735,"acc":1.70686164987558,"operator":1.65436266511165,"boltech":0.0789232975653283,"arAcc":0.894736842105263,"arBoltech":0.0526315789473684},"device":3,"acc":3,"operator":1,"boltech":0,"arAcc":0.2,"arBoltech":0,"store":"ERAFONE LIPPO PLAZA BATU"},{"name":"Khairul Anwar","target":{"device":181500000,"acc":10000000,"operator":6000000,"boltech":5000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":25,"deviceVal":165887390,"accQty":47,"accVal":10461259,"operator":6378378,"boltechQty":1,"boltechVal":629730,"arAcc":1.88,"arBoltech":0.04},"est":{"device":0.913980110192837,"acc":1.0461259,"operator":1.063063,"boltech":0.125946,"arAcc":1.88,"arBoltech":0.04},"device":2,"acc":3,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE & MORE TUMENGGUNG SURYO"},{"name":"Faisel Arif Mustofa Sansofyan","target":{"device":788777433,"acc":36707209,"operator":17500000,"boltech":20000000,"arAcc":1.8,"arBoltech":0.15},"ach":{"deviceQty":50,"deviceVal":772837839,"accQty":91,"accVal":82503700,"operator":8567118,"boltechQty":7,"boltechVal":9498197,"arAcc":1.82,"arBoltech":0.14},"est":{"device":0.979792025819785,"acc":2.24761572038887,"operator":0.4895496,"boltech":0.47490985,"arAcc":1.82,"arBoltech":0.14},"device":3,"acc":3,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0.5,"store":"IBOX SOEKARNO HATTA MALANG"},{"name":"Mohamad Hilmi Abidin","target":{"device":200000000,"acc":60000000,"operator":6500000,"boltech":5500000,"arAcc":2,"arBoltech":0.15},"ach":{"deviceQty":44,"deviceVal":230474774,"accQty":94,"accVal":67951085,"operator":4810811,"boltechQty":2,"boltechVal":1475676,"arAcc":2.13636363636364,"arBoltech":0.0454545454545455},"est":{"device":1.15237387,"acc":1.13251808333333,"operator":0.740124769230769,"boltech":0.268304727272727,"arAcc":2.13636363636364,"arBoltech":0.0454545454545455},"device":3,"acc":3,"operator":0,"boltech":0,"arAcc":1,"arBoltech":0,"store":"XIAOMI STORE MAL OLYMPIC GARDEN"},{"name":"Ketut Riani","target":{"device":140000000,"acc":6000000,"operator":2000000,"boltech":3500000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":33,"deviceVal":169258557,"accQty":47,"accVal":6280896,"operator":1711712,"boltechQty":2,"boltechVal":809009,"arAcc":1.42424242424242,"arBoltech":0.0606060606060606},"est":{"device":1.20898969285714,"acc":1.046816,"operator":0.855856,"boltech":0.231145428571429,"arAcc":1.42424242424242,"arBoltech":0.0606060606060606},"device":3,"acc":3,"operator":0.2,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE KESAMBEN BLITAR"},{"name":"Nurul Fithri Asani","target":{"device":414414000,"acc":27027000,"operator":3603603,"boltech":10810810,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":65,"deviceVal":387963964,"accQty":90,"accVal":39460896,"operator":3893694,"boltechQty":4,"boltechVal":888287,"arAcc":1.38461538461538,"arBoltech":0.0615384615384615},"est":{"device":0.936174849305284,"acc":1.46005461205461,"operator":1.08050026598379,"boltech":0.0821665536624915,"arAcc":1.38461538461538,"arBoltech":0.0615384615384615},"device":2,"acc":3,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO BLITAR"},{"name":"Irma Sofyani","target":{"device":591583074,"acc":26027032,"operator":17500000,"boltech":20000000,"arAcc":1.8,"arBoltech":0.15},"ach":{"deviceQty":43,"deviceVal":695366671,"accQty":70,"accVal":40608116,"operator":6955406,"boltechQty":3,"boltechVal":4096396,"arAcc":1.62790697674419,"arBoltech":0.0697674418604651},"est":{"device":1.17543368220166,"acc":1.56022845785874,"operator":0.397451771428571,"boltech":0.2048198,"arAcc":1.62790697674419,"arBoltech":0.0697674418604651},"device":3,"acc":3,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"IBOX SOEKARNO HATTA MALANG"},{"name":"Ferly Andika Pratama","target":{"device":591583074,"acc":11307206,"operator":17500000,"boltech":20000000,"arAcc":1.8,"arBoltech":0.15},"ach":{"deviceQty":41,"deviceVal":639377478,"accQty":54,"accVal":54245048,"operator":4628829,"boltechQty":3,"boltechVal":3600901,"arAcc":1.31707317073171,"arBoltech":0.0731707317073171},"est":{"device":1.0807906887478,"acc":4.79738743594129,"operator":0.264504514285714,"boltech":0.18004505,"arAcc":1.31707317073171,"arBoltech":0.0731707317073171},"device":3,"acc":3,"operator":0,"boltech":0,"arAcc":0.2,"arBoltech":0,"store":"IBOX SOEKARNO HATTA MALANG"},{"name":"Mochammad Bagas Nirvana","target":{"device":788777433,"acc":17229731,"operator":17500000,"boltech":20000000,"arAcc":1.8,"arBoltech":0.15},"ach":{"deviceQty":59,"deviceVal":886793695,"accQty":59,"accVal":40817123,"operator":1880631,"boltechQty":3,"boltechVal":4096396,"arAcc":1,"arBoltech":0.0508474576271186},"est":{"device":1.12426352212843,"acc":2.36899363083498,"operator":0.107464628571429,"boltech":0.2048198,"arAcc":1,"arBoltech":0.0508474576271186},"device":3,"acc":3,"operator":0,"boltech":0,"arAcc":0.2,"arBoltech":0,"store":"IBOX SOEKARNO HATTA MALANG"},{"name":"Gandi Wirapeta","target":{"device":140000000,"acc":6000000,"operator":2000000,"boltech":3500000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":32,"deviceVal":128019817,"accQty":40,"accVal":10227920,"operator":1586486,"boltechQty":4,"boltechVal":1428828,"arAcc":1.25,"arBoltech":0.125},"est":{"device":0.914427264285714,"acc":1.70465333333333,"operator":0.793243,"boltech":0.408236571428571,"arAcc":1.25,"arBoltech":0.125},"device":2,"acc":3,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0.5,"store":"ERAFONE KESAMBEN BLITAR"},{"name":"Keyzha Aprina Ferisca","target":{"device":274095974,"acc":13301561,"operator":4152236,"boltech":7080659,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":66,"deviceVal":329818020,"accQty":89,"accVal":11731794,"operator":5737746,"boltechQty":6,"boltechVal":2949548,"arAcc":1.34848484848485,"arBoltech":0.0909090909090909},"est":{"device":1.2032939236094,"acc":0.881986257101704,"operator":1.38184486623593,"boltech":0.416564051453403,"arAcc":1.34848484848485,"arBoltech":0.0909090909090909},"device":3,"acc":1.5,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE WLINGI BLITAR"},{"name":"Jonnathan Virgan Gunawan","target":{"device":108753064,"acc":5620173,"operator":1499001,"boltech":4063045,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":17,"deviceVal":99849550,"accQty":29,"accVal":8127747,"operator":450450,"boltechQty":1,"boltechVal":1125225,"arAcc":1.70588235294118,"arBoltech":0.0588235294117647},"est":{"device":0.918130913534537,"acc":1.44617380995211,"operator":0.300500133088637,"boltech":0.276941308796728,"arAcc":1.70588235294118,"arBoltech":0.0588235294117647},"device":2,"acc":3,"operator":0,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE MALL ARAYA MALANG"},{"name":"Deby Yulanda","target":{"device":140000000,"acc":6000000,"operator":2000000,"boltech":3500000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":31,"deviceVal":147602704,"accQty":51,"accVal":5316119,"operator":1766667,"boltechQty":2,"boltechVal":809009,"arAcc":1.64516129032258,"arBoltech":0.0645161290322581},"est":{"device":1.05430502857143,"acc":0.886019833333333,"operator":0.8833335,"boltech":0.231145428571429,"arAcc":1.64516129032258,"arBoltech":0.0645161290322581},"device":3,"acc":1.5,"operator":0.2,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE KESAMBEN BLITAR"},{"name":"Anis Maulidya","target":{"device":183400000,"acc":9300000,"operator":2800000,"boltech":2300000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":38,"deviceVal":229794593,"accQty":44,"accVal":8677747,"operator":2126126,"boltechQty":1,"boltechVal":269369,"arAcc":1.15789473684211,"arBoltech":0.0263157894736842},"est":{"device":1.25296942748092,"acc":0.933091075268817,"operator":0.759330714285714,"boltech":0.117116956521739,"arAcc":1.15789473684211,"arBoltech":0.0263157894736842},"device":3,"acc":2,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO A YANI MALANG"},{"name":"Sofi Aprilia Kusuma Ningrum","target":{"device":162855000,"acc":5198000,"operator":2865000,"boltech":2166000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":32,"deviceVal":151975676,"accQty":43,"accVal":5587928,"operator":2149550,"boltechQty":3,"boltechVal":898197,"arAcc":1.34375,"arBoltech":0.09375},"est":{"device":0.93319625433668,"acc":1.07501500577145,"operator":0.750279232111693,"boltech":0.414680055401662,"arAcc":1.34375,"arBoltech":0.09375},"device":2,"acc":3,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO DAMPIT"},{"name":"Fashna Salsaqila","target":{"device":101015016,"acc":6825545,"operator":1334173,"boltech":4554536,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":15,"deviceVal":88725227,"accQty":24,"accVal":5857020,"operator":1905405,"boltechQty":1,"boltechVal":179279,"arAcc":1.6,"arBoltech":0.0666666666666667},"est":{"device":0.87833700882649,"acc":0.858102906068307,"operator":1.42815436978563,"boltech":0.0393627364016883,"arAcc":1.6,"arBoltech":0.0666666666666667},"device":1.5,"acc":1.5,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE LIPPO PLAZA BATU"},{"name":"Nelafi Aulia Faza","target":{"device":300000000,"acc":12707185,"operator":3000000,"boltech":12000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":29,"deviceVal":163856756,"accQty":55,"accVal":12949635,"operator":3721621,"boltechQty":2,"boltechVal":1079280,"arAcc":1.89655172413793,"arBoltech":0.0689655172413793},"est":{"device":0.546189186666667,"acc":1.01907975684623,"operator":1.24054033333333,"boltech":0.08994,"arAcc":1.89655172413793,"arBoltech":0.0689655172413793},"device":0,"acc":3,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE MAL OLYMPIC GARDEN"},{"name":"Dian Angga Pratama","target":{"device":274095974,"acc":13301561,"operator":4152236,"boltech":7080659,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":68,"deviceVal":329992794,"accQty":91,"accVal":10767833,"operator":6095312,"boltechQty":8,"boltechVal":2515312,"arAcc":1.33823529411765,"arBoltech":0.117647058823529},"est":{"device":1.20393156157777,"acc":0.809516492086906,"operator":1.46795895031015,"boltech":0.355236991359138,"arAcc":1.33823529411765,"arBoltech":0.117647058823529},"device":3,"acc":0,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0.2,"store":"ERAFONE WLINGI BLITAR"},{"name":"Mahirti Johar","target":{"device":101015016,"acc":6825545,"operator":1334173,"boltech":4554536,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":16,"deviceVal":161877477,"accQty":26,"accVal":5481349,"operator":450450,"boltechQty":2,"boltechVal":2250450,"arAcc":1.625,"arBoltech":0.125},"est":{"device":1.6025090467738,"acc":0.803063931158611,"operator":0.337624880731359,"boltech":0.494111804144264,"arAcc":1.625,"arBoltech":0.125},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":1,"arBoltech":0.5,"store":"ERAFONE LIPPO PLAZA BATU"},{"name":"Eka Abdullah Effendy","target":{"device":320000000,"acc":12707185,"operator":3000000,"boltech":10000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":39,"deviceVal":237613520,"accQty":52,"accVal":12134312,"operator":3419820,"boltechQty":1,"boltechVal":269369,"arAcc":1.33333333333333,"arBoltech":0.0256410256410256},"est":{"device":0.74254225,"acc":0.954917395158723,"operator":1.13994,"boltech":0.0269369,"arAcc":1.33333333333333,"arBoltech":0.0256410256410256},"device":0,"acc":3,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE MAL OLYMPIC GARDEN"},{"name":"Akbar Syaihidillah Afzy","target":{"device":190000000,"acc":75000000,"operator":5500000,"boltech":5500000,"arAcc":2,"arBoltech":0.15},"ach":{"deviceQty":42,"deviceVal":200863069,"accQty":96,"accVal":49162068,"operator":1833333,"boltechQty":1,"boltechVal":629730,"arAcc":2.28571428571429,"arBoltech":0.0238095238095238},"est":{"device":1.05717404736842,"acc":0.65549424,"operator":0.333333272727273,"boltech":0.114496363636364,"arAcc":2.28571428571429,"arBoltech":0.0238095238095238},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":1,"arBoltech":0,"store":"XIAOMI STORE MAL OLYMPIC GARDEN"},{"name":"Vikry Zamzany Nugraha","target":{"device":200000000,"acc":9000000,"operator":4000000,"boltech":7000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":26,"deviceVal":155074775,"accQty":38,"accVal":9815852,"operator":2518918,"boltechQty":3,"boltechVal":1258558,"arAcc":1.46153846153846,"arBoltech":0.115384615384615},"est":{"device":0.775373875,"acc":1.09065022222222,"operator":0.6297295,"boltech":0.179794,"arAcc":1.46153846153846,"arBoltech":0.115384615384615},"device":0,"acc":3,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0.2,"store":"ERAFONE & MORE SAWOJAJAR MALANG"},{"name":"Delvi Nurhayati","target":{"device":125175038,"acc":5800642,"operator":2067960,"boltech":2280885,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":35,"deviceVal":137806306,"accQty":36,"accVal":4121028,"operator":1856755,"boltechQty":2,"boltechVal":989189,"arAcc":1.02857142857143,"arBoltech":0.0571428571428571},"est":{"device":1.10090884094639,"acc":0.710443430227206,"operator":0.897867947155651,"boltech":0.433686485728127,"arAcc":1.02857142857143,"arBoltech":0.0571428571428571},"device":3,"acc":0,"operator":0.2,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO TUREN MALANG"},{"name":"Roicha Firdaus","target":{"device":140000000,"acc":6000000,"operator":2000000,"boltech":3500000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":30,"deviceVal":137062160,"accQty":41,"accVal":4904050,"operator":1226126,"boltechQty":1,"boltechVal":359459,"arAcc":1.36666666666667,"arBoltech":0.0333333333333333},"est":{"device":0.979015428571429,"acc":0.817341666666667,"operator":0.613063,"boltech":0.102702571428571,"arAcc":1.36666666666667,"arBoltech":0.0333333333333333},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE KESAMBEN BLITAR"},{"name":"Bustantheo Firdaus Mustaghfirin","target":{"device":100000000,"acc":6000000,"operator":1500000,"boltech":2550000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":11,"deviceVal":100575678,"accQty":15,"accVal":1969188,"operator":405405,"boltechQty":1,"boltechVal":179279,"arAcc":1.36363636363636,"arBoltech":0.0909090909090909},"est":{"device":1.00575678,"acc":0.328198,"operator":0.27027,"boltech":0.0703054901960784,"arAcc":1.36363636363636,"arBoltech":0.0909090909090909},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE & MORE TLOGOMAS MALANG"},{"name":"Wahyu Melati","target":{"device":125175038,"acc":5800642,"operator":2067960,"boltech":2280885,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":33,"deviceVal":175465766,"accQty":36,"accVal":3227292,"operator":1531531,"boltechQty":2,"boltechVal":718919,"arAcc":1.09090909090909,"arBoltech":0.0606060606060606},"est":{"device":1.4017632333373,"acc":0.556368070982488,"operator":0.740599914891971,"boltech":0.315193006223462,"arAcc":1.09090909090909,"arBoltech":0.0606060606060606},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO TUREN MALANG"},{"name":"Vina Ismatul Maula","target":{"device":414414000,"acc":27027000,"operator":3603603,"boltech":10810810,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":72,"deviceVal":408597301,"accQty":75,"accVal":17181708,"operator":2411711,"boltechQty":5,"boltechVal":1346845,"arAcc":1.04166666666667,"arBoltech":0.0694444444444444},"est":{"device":0.985964038377082,"acc":0.635723831723832,"operator":0.669249914599361,"boltech":0.124583171843738,"arAcc":1.04166666666667,"arBoltech":0.0694444444444444},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO BLITAR"},{"name":"Devi Agustin Yuliyanti","target":{"device":414414000,"acc":27027000,"operator":3603603,"boltech":10810810,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":76,"deviceVal":495535137,"accQty":99,"accVal":21302781,"operator":2411713,"boltechQty":2,"boltechVal":628828,"arAcc":1.30263157894737,"arBoltech":0.0263157894736842},"est":{"device":1.19574902633598,"acc":0.788203685203685,"operator":0.669250469599454,"boltech":0.0581665943624946,"arAcc":1.30263157894737,"arBoltech":0.0263157894736842},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO BLITAR"},{"name":"Muhamad Huanka Alifiansyah Frediawan","target":{"device":200000000,"acc":60000000,"operator":5500000,"boltech":5000000,"arAcc":2,"arBoltech":0.15},"ach":{"deviceQty":46,"deviceVal":220679283,"accQty":71,"accVal":40885409,"operator":3208108,"boltechQty":3,"boltechVal":1420721,"arAcc":1.54347826086957,"arBoltech":0.0652173913043478},"est":{"device":1.103396415,"acc":0.681423483333333,"operator":0.583292363636364,"boltech":0.2841442,"arAcc":1.54347826086957,"arBoltech":0.0652173913043478},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"XIAOMI STORE MAL OLYMPIC GARDEN"},{"name":"Hansah Saiful Huda","target":{"device":215000000,"acc":75000000,"operator":5500000,"boltech":5500000,"arAcc":2,"arBoltech":0.15},"ach":{"deviceQty":54,"deviceVal":232996397,"accQty":96,"accVal":49299011,"operator":2018019,"boltechQty":4,"boltechVal":2122523,"arAcc":1.77777777777778,"arBoltech":0.0740740740740741},"est":{"device":1.08370417209302,"acc":0.657320146666667,"operator":0.366912545454545,"boltech":0.385913272727273,"arAcc":1.77777777777778,"arBoltech":0.0740740740740741},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"XIAOMI STORE MAL OLYMPIC GARDEN"},{"name":"Wahyu Wardana","target":{"device":414414000,"acc":27027000,"operator":3603603,"boltech":10810810,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":88,"deviceVal":405388288,"accQty":95,"accVal":15435486,"operator":1766667,"boltechQty":1,"boltechVal":269369,"arAcc":1.07954545454545,"arBoltech":0.0113636363636364},"est":{"device":0.978220542742282,"acc":0.571113553113553,"operator":0.490250174616904,"boltech":0.0249166343687476,"arAcc":1.07954545454545,"arBoltech":0.0113636363636364},"device":3,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO BLITAR"},{"name":"Viona Hatvilillah","target":{"device":133235564,"acc":5975952,"operator":3735810,"boltech":4035464,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":29,"deviceVal":131595495,"accQty":21,"accVal":1750000,"operator":3288288,"boltechQty":3,"boltechVal":1934234,"arAcc":0.724137931034483,"arBoltech":0.103448275862069},"est":{"device":0.987690456280877,"acc":0.292840370873126,"operator":0.880207505199676,"boltech":0.479308946876989,"arAcc":0.724137931034483,"arBoltech":0.103448275862069},"device":3,"acc":0,"operator":0.2,"boltech":0,"arAcc":0,"arBoltech":0.2,"store":"ERAFONE RUKO PAKIS MALANG"},{"name":"Dimas Ananda Saputra","target":{"device":162855000,"acc":5198000,"operator":2865000,"boltech":2166000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":19,"deviceVal":105352252,"accQty":27,"accVal":4725852,"operator":2014414,"boltechQty":3,"boltechVal":1078378,"arAcc":1.42105263157895,"arBoltech":0.157894736842105},"est":{"device":0.646908304933837,"acc":0.909167372066179,"operator":0.703111343804538,"boltech":0.497866112650046,"arAcc":1.42105263157895,"arBoltech":0.157894736842105},"device":0,"acc":1.5,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":1,"store":"ERAFONE RUKO DAMPIT"},{"name":"Atrisa Diasetyani","target":{"device":200000000,"acc":65000000,"operator":5500000,"boltech":5500000,"arAcc":2,"arBoltech":0.15},"ach":{"deviceQty":43,"deviceVal":186672975,"accQty":66,"accVal":38464772,"operator":2417117,"boltechQty":3,"boltechVal":1042342,"arAcc":1.53488372093023,"arBoltech":0.0697674418604651},"est":{"device":0.933364875,"acc":0.591765723076923,"operator":0.439475818181818,"boltech":0.189516727272727,"arAcc":1.53488372093023,"arBoltech":0.0697674418604651},"device":2,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"XIAOMI STORE MAL OLYMPIC GARDEN"},{"name":"Darmawan Romadhan","target":{"device":101015016,"acc":6825545,"operator":1334173,"boltech":4554536,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":15,"deviceVal":74004506,"accQty":25,"accVal":5866035,"operator":450450,"boltechQty":1,"boltechVal":629730,"arAcc":1.66666666666667,"arBoltech":0.0666666666666667},"est":{"device":0.732608961820092,"acc":0.859423679720813,"operator":0.337624880731359,"boltech":0.138264358872122,"arAcc":1.66666666666667,"arBoltech":0.0666666666666667},"device":0,"acc":1.5,"operator":0,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE LIPPO PLAZA BATU"},{"name":"Didik Priyantoro","target":{"device":100000000,"acc":6000000,"operator":1500000,"boltech":2550000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":14,"deviceVal":62194593,"accQty":21,"accVal":2295857,"operator":3360360,"boltechQty":0,"boltechVal":0,"arAcc":1.5,"arBoltech":0},"est":{"device":0.62194593,"acc":0.382642833333333,"operator":2.24024,"boltech":0,"arAcc":1.5,"arBoltech":0},"device":0,"acc":0,"operator":1,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE & MORE TLOGOMAS MALANG"},{"name":"Nikki Nur Hidayat","target":{"device":133235564,"acc":5975952,"operator":3735810,"boltech":4035464,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":27,"deviceVal":112723422,"accQty":27,"accVal":1496127,"operator":4072972,"boltechQty":3,"boltechVal":988288,"arAcc":1,"arBoltech":0.111111111111111},"est":{"device":0.846046045183552,"acc":0.250357934601884,"operator":1.09025137788057,"boltech":0.244900710302458,"arAcc":1,"arBoltech":0.111111111111111},"device":0,"acc":0,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0.2,"store":"ERAFONE RUKO PAKIS MALANG"},{"name":"Amelia Agil Anggitarani","target":{"device":100000000,"acc":6000000,"operator":1500000,"boltech":2550000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":21,"deviceVal":81386486,"accQty":22,"accVal":3393513,"operator":1486486,"boltechQty":1,"boltechVal":179279,"arAcc":1.04761904761905,"arBoltech":0.0476190476190476},"est":{"device":0.81386486,"acc":0.5655855,"operator":0.990990666666667,"boltech":0.0703054901960784,"arAcc":1.04761904761905,"arBoltech":0.0476190476190476},"device":0,"acc":0,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE & MORE TLOGOMAS MALANG"},{"name":"Wenike Kresta Diva","target":{"device":183400000,"acc":9300000,"operator":2800000,"boltech":2300000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":31,"deviceVal":151332431,"accQty":45,"accVal":6617559,"operator":3229728,"boltechQty":1,"boltechVal":359459,"arAcc":1.45161290322581,"arBoltech":0.032258064516129},"est":{"device":0.825149569247546,"acc":0.711565483870968,"operator":1.15347428571429,"boltech":0.15628652173913,"arAcc":1.45161290322581,"arBoltech":0.032258064516129},"device":0,"acc":0,"operator":1,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO A YANI MALANG"},{"name":"Alifi Saputra","target":{"device":350000000,"acc":12707185,"operator":3000000,"boltech":12000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":42,"deviceVal":258818018,"accQty":37,"accVal":7879906,"operator":4974776,"boltechQty":1,"boltechVal":1125225,"arAcc":0.880952380952381,"arBoltech":0.0238095238095238},"est":{"device":0.739480051428571,"acc":0.620114210975916,"operator":1.65825866666667,"boltech":0.09376875,"arAcc":0.880952380952381,"arBoltech":0.0238095238095238},"device":0,"acc":0,"operator":1,"boltech":0,"arAcc":0.2,"arBoltech":0,"store":"ERAFONE MAL OLYMPIC GARDEN"},{"name":"Arik Pandika","target":{"device":200000000,"acc":9000000,"operator":4000000,"boltech":7000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":31,"deviceVal":131273875,"accQty":44,"accVal":4853243,"operator":3782882,"boltechQty":3,"boltechVal":988288,"arAcc":1.41935483870968,"arBoltech":0.0967741935483871},"est":{"device":0.656369375,"acc":0.539249222222222,"operator":0.9457205,"boltech":0.141184,"arAcc":1.41935483870968,"arBoltech":0.0967741935483871},"device":0,"acc":0,"operator":0.5,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE & MORE SAWOJAJAR MALANG"},{"name":"Wahyu Eko Prasetyo","target":{"device":181500000,"acc":10000000,"operator":6000000,"boltech":5000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":29,"deviceVal":141460359,"accQty":46,"accVal":7113960,"operator":2445946,"boltechQty":0,"boltechVal":0,"arAcc":1.58620689655172,"arBoltech":0},"est":{"device":0.779395917355372,"acc":0.711396,"operator":0.407657666666667,"boltech":0,"arAcc":1.58620689655172,"arBoltech":0},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":1,"arBoltech":0,"store":"ERAFONE & MORE TUMENGGUNG SURYO"},{"name":"Muhammad Zallum","target":{"device":125175038,"acc":5800642,"operator":2067960,"boltech":2280885,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":23,"deviceVal":103951353,"accQty":30,"accVal":2263964,"operator":1475675,"boltechQty":0,"boltechVal":0,"arAcc":1.30434782608696,"arBoltech":0},"est":{"device":0.830447944421635,"acc":0.390295419024308,"operator":0.713589721271204,"boltech":0,"arAcc":1.30434782608696,"arBoltech":0},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO TUREN MALANG"},{"name":"Mario Ady Cahyono","target":{"device":183400000,"acc":9300000,"operator":2800000,"boltech":2300000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":23,"deviceVal":97961263,"accQty":30,"accVal":4231267,"operator":1531531,"boltechQty":1,"boltechVal":629730,"arAcc":1.30434782608696,"arBoltech":0.0434782608695652},"est":{"device":0.534139929116685,"acc":0.454974946236559,"operator":0.546975357142857,"boltech":0.273795652173913,"arAcc":1.30434782608696,"arBoltech":0.0434782608695652},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO A YANI MALANG"},{"name":"Mohamad Fahriza","target":{"device":125175038,"acc":5800642,"operator":2067960,"boltech":2280885,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":19,"deviceVal":74897296,"accQty":26,"accVal":3086933,"operator":900900,"boltechQty":0,"boltechVal":0,"arAcc":1.36842105263158,"arBoltech":0},"est":{"device":0.598340509391337,"acc":0.532170921770383,"operator":0.435646724308014,"boltech":0,"arAcc":1.36842105263158,"arBoltech":0},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO TUREN MALANG"},{"name":"Khilma Mahirotun Nadzifah","target":{"device":215000000,"acc":60000000,"operator":5500000,"boltech":5500000,"arAcc":2,"arBoltech":0.15},"ach":{"deviceQty":26,"deviceVal":106958558,"accQty":43,"accVal":25609915,"operator":2324323,"boltechQty":1,"boltechVal":503604,"arAcc":1.65384615384615,"arBoltech":0.0384615384615385},"est":{"device":0.497481665116279,"acc":0.426831916666667,"operator":0.422604181818182,"boltech":0.0915643636363636,"arAcc":1.65384615384615,"arBoltech":0.0384615384615385},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"XIAOMI STORE MAL OLYMPIC GARDEN"},{"name":"Novi Vitri Aningtiyas","target":{"device":162855000,"acc":5198000,"operator":2865000,"boltech":2166000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":25,"deviceVal":128850451,"accQty":25,"accVal":3290269,"operator":1766667,"boltechQty":2,"boltechVal":628828,"arAcc":1,"arBoltech":0.08},"est":{"device":0.791197390316539,"acc":0.632987495190458,"operator":0.616637696335079,"boltech":0.290317636195753,"arAcc":1,"arBoltech":0.08},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.5,"arBoltech":0,"store":"ERAFONE RUKO DAMPIT"},{"name":"Putri Wahyu Wardhani","target":{"device":200000000,"acc":12707185,"operator":3000000,"boltech":4000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":32,"deviceVal":125556757,"accQty":28,"accVal":5745943,"operator":1081081,"boltechQty":1,"boltechVal":449550,"arAcc":0.875,"arBoltech":0.03125},"est":{"device":0.627783785,"acc":0.452180636387996,"operator":0.360360333333333,"boltech":0.1123875,"arAcc":0.875,"arBoltech":0.03125},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.2,"arBoltech":0,"store":"ERAFONE MAL OLYMPIC GARDEN"},{"name":"Ilfan Donny Arifianto","target":{"device":183400000,"acc":9300000,"operator":2800000,"boltech":2300000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":31,"deviceVal":123065769,"accQty":26,"accVal":3124862,"operator":1361260,"boltechQty":1,"boltechVal":359459,"arAcc":0.838709677419355,"arBoltech":0.032258064516129},"est":{"device":0.671023822246456,"acc":0.336006666666667,"operator":0.486164285714286,"boltech":0.15628652173913,"arAcc":0.838709677419355,"arBoltech":0.032258064516129},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0.2,"arBoltech":0,"store":"ERAFONE RUKO A YANI MALANG"},{"name":"Dava Afif Kamaludin","target":{"device":330000000,"acc":12707185,"operator":3000000,"boltech":10000000,"arAcc":1.5,"arBoltech":0.15},"ach":{"deviceQty":42,"deviceVal":230186490,"accQty":30,"accVal":4522968,"operator":2271171,"boltechQty":4,"boltechVal":3509909,"arAcc":0.714285714285714,"arBoltech":0.0952380952380952},"est":{"device":0.697534818181818,"acc":0.355937841465281,"operator":0.757057,"boltech":0.3509909,"arAcc":0.714285714285714,"arBoltech":0.0952380952380952},"device":0,"acc":0,"operator":0,"boltech":0,"arAcc":0,"arBoltech":0,"store":"ERAFONE MAL OLYMPIC GARDEN"}];
 
 function calcTotal(r){ return fields.reduce((s,f)=>s+(parseFloat(r[f])||0),0); }
 function calcGrade(total){
@@ -805,7 +981,61 @@ async function toggleAdmin(){
   const {data,error}=await sb.auth.signInWithPassword({email:email.trim(),password});if(error){alert('Login gagal: '+error.message);return;}
   currentUser=data.user;isAdmin=isAdminFromUser(currentUser);updateAdminUI();render();syncMessage(isAdmin?'Login admin berhasil.':'Login berhasil (mode lihat saja — email ini tidak terdaftar sebagai admin).');
 }
-function normalizeRows(value){if(!Array.isArray(value))return[];return value.map(r=>({name:String(r.name??''),device:parseFloat(r.device)||0,acc:parseFloat(r.acc)||0,operator:parseFloat(r.operator)||0,boltech:parseFloat(r.boltech)||0,arAcc:parseFloat(r.arAcc)||0,arBoltech:parseFloat(r.arBoltech)||0,store:String(r.store??''),prevRank:(r.prevRank===null||r.prevRank===undefined)?null:parseInt(r.prevRank)}));}
+function normalizeRows(value){
+  if(!Array.isArray(value))return[];
+  return value.map(r=>({
+    name:String(r.name??''),
+    device:parseFloat(r.device)||0,acc:parseFloat(r.acc)||0,operator:parseFloat(r.operator)||0,
+    boltech:parseFloat(r.boltech)||0,arAcc:parseFloat(r.arAcc)||0,arBoltech:parseFloat(r.arBoltech)||0,
+    store:String(r.store??''),
+    prevRank:(r.prevRank===null||r.prevRank===undefined)?null:parseInt(r.prevRank),
+    active:r.active!==false,
+    target:r.target||{}, ach:r.ach||{}, est:r.est||{}
+  }));
+}
+
+function isActive(r){ return r.active !== false; }
+function getUploadMode(){ return document.querySelector('input[name="uploadMode"]:checked')?.value || 'current'; }
+function updateUploadModeUI(){
+  const archive = getUploadMode()==='archive';
+  const card=document.getElementById('archiveMonthCard'); if(card) card.style.display=archive?'block':'none';
+  const zone=document.getElementById('dropZone'); if(zone) zone.querySelector('.main-txt').textContent=archive?'Upload Excel Bulan Sebelumnya':'Upload Excel Data Berjalan';
+}
+function monthLabel(monthKey){
+  if(!monthKey)return '-';
+  const d=new Date(monthKey+'-01T00:00:00');
+  return d.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+}
+function archiveMonthFromSnapshot(h){
+  const f=String(h?.file_name||'');
+  const m=f.match(/^ARCHIVE_MONTH:(\d{4}-\d{2})\|/);
+  return m?m[1]:'';
+}
+function fmtValueShort(v){
+  const n=Number(v||0)/1000;
+  return n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:1});
+}
+function fmtRatio(v){
+  const n=Number(v||0);
+  return n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtTarget(t){
+  if(!t)return '-';
+  return `Device ${fmtValueShort(t.device)} · Acc ${fmtValueShort(t.acc)} · Op ${fmtValueShort(t.operator)} · Boltech ${fmtValueShort(t.boltech)} · AR Acc ${fmtRatio(t.arAcc)} · AR Boltech ${fmtRatio(t.arBoltech)}`;
+}
+function fmtAchievement(a){
+  if(!a)return '-';
+  return `Device ${fmtValueShort(a.deviceVal)} · Acc ${fmtValueShort(a.accVal)} · Op ${fmtValueShort(a.operator)} · Boltech ${fmtValueShort(a.boltechVal)} · AR Acc ${fmtRatio(a.arAcc)} · AR Boltech ${fmtRatio(a.arBoltech)}`;
+}
+function fmtTargetAchPoint(row){
+  return `<div class="tap-wrap"><div><span class="tap-label ach-label">Ach</span> ${escapeHtml(fmtAchievement(row.ach))}</div><div><span class="tap-label point-label">Point</span> <b>${Number(row.total||0).toFixed(2)}</b></div></div>`;
+}
+function buildDataMeta(row){
+  return {target:row.target||{},ach:row.ach||{},est:row.est||{},device:row.device,acc:row.acc,operator:row.operator,boltech:row.boltech,arAcc:row.arAcc,arBoltech:row.arBoltech,store:row.store||'',active:row.active!==false};
+}
+function getRankedRows(source=rows){
+  return source.filter(isActive).map((r,i)=>({...r,total:calcTotal(r)})).sort((a,b)=>b.total-a.total).map((r,i)=>({...r,rank:i+1}));
+}
 async function loadData(){
   if(!SUPABASE_READY){rows=SEED.slice();lastUpdateLabel='Data awal (belum tersambung server)';render();return;}
   const {data,error}=await sb.from('dashboard_state').select('rows,last_update').eq('id',1).maybeSingle();
@@ -827,44 +1057,77 @@ function handleFile(file){
   if(!isAdmin){alert('Login admin terlebih dahulu.');return;} if(!file)return;
   const reader=new FileReader();reader.onload=async function(e){try{
     const data=new Uint8Array(e.target.result),wb=XLSX.read(data,{type:'array'}),sheet=wb.Sheets[wb.SheetNames[0]],grid=XLSX.utils.sheet_to_json(sheet,{header:1,defval:null,raw:true});
-    let headerRowIdx=-1,totalColIdx=-1;for(let i=0;i<grid.length;i++){const idx=grid[i].findIndex(c=>typeof c==='string'&&c.trim().toLowerCase()==='total point');if(idx>-1){headerRowIdx=i;totalColIdx=idx;break;}}
-    if(headerRowIdx===-1)throw new Error('Kolom "Total Point" tidak ditemukan. Pastikan format file sama seperti contoh.');
+    let headerRowIdx=-1,totalColIdx=-1;
+    for(let i=0;i<grid.length;i++){const idx=grid[i].findIndex(c=>typeof c==='string'&&c.trim().toLowerCase()==='total point');if(idx>-1){headerRowIdx=i;totalColIdx=idx;break;}}
+    if(headerRowIdx===-1)throw new Error('Kolom "Total Point" tidak ditemukan.');
     const newRows=[];
-    const beforeSorted=rows.map(r=>({name:r.name,total:calcTotal(r)})).sort((a,b)=>b.total-a.total);
-    const prevRankMap={};beforeSorted.forEach((r,i)=>{prevRankMap[r.name]=i+1;});
-    for(let i=headerRowIdx+1;i<grid.length;i++){const r=grid[i];if(!r||r[0]==null||typeof r[0]!=='string'||r[0].trim()==='')continue;const total=parseFloat(r[totalColIdx]);if(isNaN(total))continue;const nm=String(r[0]).trim();newRows.push({name:nm,device:parseFloat(r[totalColIdx-6])||0,acc:parseFloat(r[totalColIdx-5])||0,operator:parseFloat(r[totalColIdx-4])||0,boltech:parseFloat(r[totalColIdx-3])||0,arAcc:parseFloat(r[totalColIdx-2])||0,arBoltech:parseFloat(r[totalColIdx-1])||0,store:r[totalColIdx+2]?String(r[totalColIdx+2]).trim():'',prevRank:Object.prototype.hasOwnProperty.call(prevRankMap,nm)?prevRankMap[nm]:null});}
+    const oldByName={}; rows.forEach(r=>oldByName[r.name]=r);
+    for(let i=headerRowIdx+1;i<grid.length;i++){
+      const r=grid[i]; if(!r||r[0]==null||typeof r[0]!=='string'||r[0].trim()==='')continue;
+      const total=parseFloat(r[totalColIdx]); if(isNaN(total))continue;
+      const nm=String(r[0]).trim();
+      const old=oldByName[nm];
+      newRows.push({
+        name:nm,
+        target:{device:parseFloat(r[totalColIdx-27])||0,acc:parseFloat(r[totalColIdx-26])||0,operator:parseFloat(r[totalColIdx-25])||0,boltech:parseFloat(r[totalColIdx-24])||0,arAcc:parseFloat(r[totalColIdx-23])||0,arBoltech:parseFloat(r[totalColIdx-22])||0},
+        ach:{deviceQty:parseFloat(r[totalColIdx-21])||0,deviceVal:parseFloat(r[totalColIdx-20])||0,accQty:parseFloat(r[totalColIdx-19])||0,accVal:parseFloat(r[totalColIdx-18])||0,operator:parseFloat(r[totalColIdx-17])||0,boltechQty:parseFloat(r[totalColIdx-16])||0,boltechVal:parseFloat(r[totalColIdx-15])||0,arAcc:parseFloat(r[totalColIdx-14])||0,arBoltech:parseFloat(r[totalColIdx-13])||0},
+        est:{device:parseFloat(r[totalColIdx-12])||0,acc:parseFloat(r[totalColIdx-11])||0,operator:parseFloat(r[totalColIdx-10])||0,boltech:parseFloat(r[totalColIdx-9])||0,arAcc:parseFloat(r[totalColIdx-8])||0,arBoltech:parseFloat(r[totalColIdx-7])||0},
+        device:parseFloat(r[totalColIdx-6])||0,acc:parseFloat(r[totalColIdx-5])||0,operator:parseFloat(r[totalColIdx-4])||0,boltech:parseFloat(r[totalColIdx-3])||0,arAcc:parseFloat(r[totalColIdx-2])||0,arBoltech:parseFloat(r[totalColIdx-1])||0,
+        store:r[totalColIdx+2]?String(r[totalColIdx+2]).trim():'',
+        active:old ? old.active!==false : true,
+        prevRank:null
+      });
+    }
     if(newRows.length===0)throw new Error('Tidak ada baris data yang bisa dibaca dari file ini.');
-    rows=newRows;lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();document.getElementById('fileInput').value='';
-
-    const newWithTotal = newRows.map(r=>({name:r.name, total:calcTotal(r), store:r.store}));
-    const newFingerprint = fingerprintFromRows(newWithTotal);
-    const lastSnap = (historyData && historyData.length) ? historyData[0] : null;
-    let isDuplicate = false;
-    if(lastSnap && lastSnap.rows_snapshot && lastSnap.rows_snapshot.length === newWithTotal.length){
-      const lastFingerprint = fingerprintFromRows(lastSnap.rows_snapshot.map(r=>({name:r.name, total:r.total, store:r.store})));
-      isDuplicate = (lastFingerprint === newFingerprint);
-    }
-
-    if(isDuplicate){
-      setStatus('Berhasil memuat '+newRows.length+' orang dari "'+file.name+'" ke server pusat. Data sama seperti snapshot terakhir — tidak membuat snapshot baru agar riwayat tetap bersih.',true);
-      return;
-    }
-
-    const autoLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
-    const snapResult=await createSnapshotEntry(autoLabel, {fileName:file.name});
-    if(snapResult.ok){
-      await afterSnapshotSaved();
-      setStatus('Berhasil memuat '+newRows.length+' orang dari "'+file.name+'" dan menyimpan ke server pusat. Snapshot otomatis tersimpan.',true);
+    const mode=getUploadMode();
+    if(mode==='archive'){
+      const month=document.getElementById('archiveMonth')?.value;
+      if(!month)throw new Error('Pilih bulan arsip terlebih dahulu.');
+      const wt=newRows.map(r=>({...r,total:calcTotal(r)})).filter(isActive);
+      const sorted=wt.slice().sort((a,b)=>b.total-a.total);
+      const snapRows=sorted.map((r,i)=>({...buildDataMeta(r),name:r.name,total:Math.round(r.total*100)/100,grade:calcGrade(r.total),rank:i+1}));
+      const archiveLabel=`Arsip ${monthLabel(month)}`;
+      const avg=wt.length?wt.reduce((s,r)=>s+r.total,0)/wt.length:0;
+      const item={label:archiveLabel,date:new Date(month+'-28T12:00:00').toISOString(),avg:Math.round(avg*100)/100,
+        top:sorted[0]?.name||'-',top_pt:sorted[0]?.total||0,bottom:sorted[sorted.length-1]?.name||'-',bottom_pt:sorted[sorted.length-1]?.total||0,
+        count:wt.length,rows_snapshot:snapRows,file_name:`ARCHIVE_MONTH:${month}|${file.name}`,uploaded_by:currentUser?.email||'Admin'};
+      const result=await insertHistoryWithFallback(item);
+      if(!result.ok)throw new Error(result.message);
+      await loadHistory(); renderMonthlyCompare();
+      setStatus(`✓ Arsip ${monthLabel(month)} tersimpan. Data berjalan tidak berubah.`,true);
     } else {
-      setStatus('Berhasil memuat '+newRows.length+' orang dari "'+file.name+'" ke server pusat. Snapshot otomatis gagal: '+snapResult.message,true);
+      const beforeRank=getRankedRows(rows); const prevMap={};beforeRank.forEach(r=>prevMap[r.name]=r.rank);
+      newRows.forEach(r=>r.prevRank=Object.prototype.hasOwnProperty.call(prevMap,r.name)?prevMap[r.name]:null);
+      rows=newRows; lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+      await persist(); render();
+      const newWithTotal=newRows.map(r=>({name:r.name,total:calcTotal(r),store:r.store}));
+      const newFingerprint=fingerprintFromRows(newWithTotal);
+      const lastSnap=(historyData&&historyData.length)?historyData[0]:null;
+      let isDuplicate=false;
+      if(lastSnap&&lastSnap.rows_snapshot&&lastSnap.rows_snapshot.length===newWithTotal.length){
+        const lastFingerprint=fingerprintFromRows(lastSnap.rows_snapshot.map(r=>({name:r.name,total:r.total,store:r.store})));
+        isDuplicate=lastFingerprint===newFingerprint;
+      }
+      if(!isDuplicate){
+        const snapResult=await createSnapshotEntry(new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}),{fileName:file.name});
+        if(snapResult.ok)await afterSnapshotSaved();
+      }
+      setStatus(`✓ Data berjalan diperbarui: ${newRows.length} ERO. Target, Achievement, Point dan status ranking ikut tersimpan.`,true);
     }
+    document.getElementById('fileInput').value='';
   }catch(err){setStatus('Gagal membaca file: '+err.message,false);}};reader.readAsArrayBuffer(file);
 }
 const dz=document.getElementById('dropZone');['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));dz.addEventListener('drop',e=>{const file=e.dataTransfer.files[0];if(file)handleFile(file);});
 function importPaste(){
-  if(!isAdmin){alert('Login admin terlebih dahulu.');return;}const text=document.getElementById('pasteBox').value.trim();if(!text)return;const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);lines.forEach(line=>{const cols=line.split('\t').map(c=>c.trim());if(cols.length<8)return;rows.push({name:cols[0],device:parseFloat(cols[1])||0,acc:parseFloat(cols[2])||0,operator:parseFloat(cols[3])||0,boltech:parseFloat(cols[4])||0,arAcc:parseFloat(cols[5])||0,arBoltech:parseFloat(cols[6])||0,store:(cols.length>=10?cols[9]:cols[7])||'',prevRank:null});});document.getElementById('pasteBox').value='';lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();
+  if(!isAdmin){alert('Login admin terlebih dahulu.');return;}const text=document.getElementById('pasteBox').value.trim();if(!text)return;const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);lines.forEach(line=>{const cols=line.split('\t').map(c=>c.trim());if(cols.length<8)return;rows.push({name:cols[0],device:parseFloat(cols[1])||0,acc:parseFloat(cols[2])||0,operator:parseFloat(cols[3])||0,boltech:parseFloat(cols[4])||0,arAcc:parseFloat(cols[5])||0,arBoltech:parseFloat(cols[6])||0,store:(cols.length>=10?cols[9]:cols[7])||'',prevRank:null,active:true,target:{},ach:{},est:{}});});document.getElementById('pasteBox').value='';lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();
 }
-function addRow(){if(!isAdmin){alert('Login admin terlebih dahulu.');return;}rows.push({name:'Nama baru',device:0,acc:0,operator:0,boltech:0,arAcc:0,arBoltech:0,store:'',prevRank:null});lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
+function addRow(){if(!isAdmin){alert('Login admin terlebih dahulu.');return;}rows.push({name:'Nama baru',device:0,acc:0,operator:0,boltech:0,arAcc:0,arBoltech:0,store:'',prevRank:null,active:true,target:{},ach:{},est:{}});lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
+function toggleEROStatus(i){
+  if(!isAdmin||!rows[i])return;
+  rows[i].active=rows[i].active===false;
+  lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+  schedulePersist();render();
+}
 function removeRow(i){if(!isAdmin)return;rows.splice(i,1);lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
 function updateField(i,field,val){if(!isAdmin)return;rows[i][field]=(field==='name'||field==='store')?val:(parseFloat(val)||0);lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
 function clearAll(){if(!isAdmin){alert('Login admin terlebih dahulu.');return;}if(!confirm('Hapus semua data ranking dari server pusat?'))return;rows=[];lastUpdateLabel=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});schedulePersist();render();}
@@ -898,16 +1161,16 @@ async function insertHistoryWithFallback(item){
   }
 }
 async function createSnapshotEntry(label, meta={}){
-  const wt=rows.map(r=>({...r,total:calcTotal(r)}));
+  const wt=rows.filter(isActive).map(r=>({...r,total:calcTotal(r)}));
   const avg=wt.reduce((s,r)=>s+r.total,0)/wt.length;
   const sorted=[...wt].sort((a,b)=>b.total-a.total);
-  const rowsSnapshot=sorted.map((r,i)=>({name:r.name,total:Math.round(r.total*100)/100,grade:calcGrade(r.total),store:r.store||'',rank:i+1}));
+  const rowsSnapshot=sorted.map((r,i)=>({...buildDataMeta(r),name:r.name,total:Math.round(r.total*100)/100,grade:calcGrade(r.total),store:r.store||'',rank:i+1}));
   const extremes = computeStoreExtremes(wt);
   const item={
     label,date:new Date().toISOString(),avg:Math.round(avg*100)/100,
     top:sorted[0]?.name||'-',top_pt:sorted[0]?.total||0,
     bottom:sorted[sorted.length-1]?.name||'-',bottom_pt:sorted[sorted.length-1]?.total||0,
-    count:rows.length,rows_snapshot:rowsSnapshot,
+    count:rowsSnapshot.length,rows_snapshot:rowsSnapshot,
     file_name: meta.fileName || null,
     uploaded_by: meta.uploadedBy || currentUser?.email || 'Admin',
     best_store: extremes.bestStore, best_store_avg: extremes.bestAvg,
@@ -941,140 +1204,96 @@ async function saveSnapshot(){
 }
 
 function render(){
-  const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
-  lastWithTotals = withTotals;
-  const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
-  const n = rows.length;
+  const allWithTotals=rows.map((r,i)=>({...r,total:calcTotal(r),idx:i}));
+  const activeRows=allWithTotals.filter(isActive);
+  const sorted=activeRows.slice().sort((a,b)=>b.total-a.total);
+  lastWithTotals=allWithTotals;
+  const n=activeRows.length;
+  document.getElementById('rowCount').textContent=n;
+  document.getElementById('statCount').textContent=n;
+  const avg=n?(activeRows.reduce((s,r)=>s+r.total,0)/n):0;
+  document.getElementById('statAvg').textContent=avg.toFixed(2);
+  const grades=['Good','Perfect','Need Improve','Bad','Poor'];
+  ['Good','Perfect','Need Improve','Bad','Poor'].forEach(g=>{const id={Good:'statGood',Perfect:'statPerfect','Need Improve':'statNeedImprove',Bad:'statBad2',Poor:'statPoor'}[g];document.getElementById(id).textContent=activeRows.filter(r=>calcGrade(r.total)===g).length;});
+  const pctOf=c=>n?((c/n)*100).toFixed(1)+'% dari ERO aktif':'0%';
+  document.getElementById('pctPerfect').textContent=pctOf(activeRows.filter(r=>calcGrade(r.total)==='Perfect').length);
+  document.getElementById('pctGood').textContent=pctOf(activeRows.filter(r=>calcGrade(r.total)==='Good').length);
+  document.getElementById('pctNeedImprove').textContent=pctOf(activeRows.filter(r=>calcGrade(r.total)==='Need Improve').length);
+  document.getElementById('pctBad').textContent=pctOf(activeRows.filter(r=>calcGrade(r.total)==='Bad').length);
+  document.getElementById('pctPoor').textContent=pctOf(activeRows.filter(r=>calcGrade(r.total)==='Poor').length);
+  document.getElementById('lastUpdate').textContent=lastUpdateLabel?('Update terakhir: '+lastUpdateLabel):'';
 
-  document.getElementById('rowCount').textContent = n;
-  document.getElementById('statCount').textContent = n;
-  const avg = n ? (withTotals.reduce((s,r)=>s+r.total,0)/n) : 0;
-  document.getElementById('statAvg').textContent = avg.toFixed(2);
-  document.getElementById('statGood').textContent = withTotals.filter(r=>calcGrade(r.total)==='Good').length;
-  document.getElementById('statPerfect').textContent = withTotals.filter(r=>calcGrade(r.total)==='Perfect').length;
-  document.getElementById('statNeedImprove').textContent = withTotals.filter(r=>calcGrade(r.total)==='Need Improve').length;
-  document.getElementById('statBad2').textContent = withTotals.filter(r=>calcGrade(r.total)==='Bad').length;
-  document.getElementById('statPoor').textContent = withTotals.filter(r=>calcGrade(r.total)==='Poor').length;
-  const pctOf = c => n ? ((c/n)*100).toFixed(1)+'% dari total ERO' : '0%';
-  document.getElementById('pctPerfect').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Perfect').length);
-  document.getElementById('pctGood').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Good').length);
-  document.getElementById('pctNeedImprove').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Need Improve').length);
-  document.getElementById('pctBad').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Bad').length);
-  document.getElementById('pctPoor').textContent = pctOf(withTotals.filter(r=>calcGrade(r.total)==='Poor').length);
-  document.getElementById('lastUpdate').textContent = lastUpdateLabel ? ('Update terakhir: ' + lastUpdateLabel) : '';
-
-  const podium = document.getElementById('podium');
-  if(sorted.length===0){ podium.innerHTML = '<div class="empty"><i class="ti ti-trophy"></i>Belum ada data.</div>'; }
-  else {
-    const top3 = sorted.slice(0,3);
-    const cls = ['p1','p2','p3']; const bar = ['b1','b2','b3']; const rankNum = [1,2,3];
-    podium.innerHTML = top3.map((r,i)=>`
-      <div class="podium-card ${cls[i]}">
-        <div class="avatar">${initials(r.name)}<div class="rank-badge">${rankNum[i]}</div></div>
-        <div class="podium-bar ${bar[i]}"><div class="pt">${r.total.toFixed(2)}</div></div>
-        <div class="podium-name">${escapeHtml(r.name)}</div>
-        <div class="podium-store">${escapeHtml(r.store||'')}</div>
-      </div>`).join('');
+  const podium=document.getElementById('podium');
+  if(!sorted.length)podium.innerHTML='<div class="empty"><i class="ti ti-trophy"></i>Belum ada data aktif.</div>';
+  else{
+    const top3=sorted.slice(0,3),cls=['p1','p2','p3'],bar=['b1','b2','b3'],rankNum=[1,2,3];
+    podium.innerHTML=top3.map((r,i)=>`<div class="podium-card ${cls[i]}"><div class="avatar">${initials(r.name)}<div class="rank-badge">${rankNum[i]}</div></div><div class="podium-bar ${bar[i]}"><div class="pt">${r.total.toFixed(2)}</div></div><div class="podium-name">${escapeHtml(r.name)}</div><div class="podium-store">${escapeHtml(r.store||'')}</div></div>`).join('');
   }
 
-  const lb = document.getElementById('leaderboard');
-  if(sorted.length===0){ lb.innerHTML = '<div class="empty"><i class="ti ti-list-details"></i>Belum ada data.</div>'; }
-  else {
-    const maxPt = Math.max(...sorted.map(r=>r.total), 8);
-    lb.innerHTML = sorted.map((r,i)=>{
-      const gc = gradeClass(calcGrade(r.total));
-      const pct = Math.max(6, (r.total/maxPt)*100);
-      return `<div class="leaderboard-row">
-        <div class="lb-rank">${i+1}</div>
-        <div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"><span class="nm clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</span></div></div>
-        <div>${rankDeltaHtml(r.prevRank, i+1)}</div>
-        <div class="lb-pt">${r.total.toFixed(2)}</div>
-      </div>`;
+  const lb=document.getElementById('leaderboard');
+  if(!sorted.length)lb.innerHTML='<div class="empty"><i class="ti ti-list-details"></i>Belum ada data aktif.</div>';
+  else{
+    const maxPt=Math.max(...sorted.map(r=>r.total),8);
+    lb.innerHTML=sorted.map((r,i)=>{
+      const gc=gradeClass(calcGrade(r.total)),pct=Math.max(4,(r.total/maxPt)*100);
+      return `<div class="leaderboard-row"><div class="lb-rank">${i+1}</div><div class="lb-name clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}<span class="lb-store">${escapeHtml(r.store||'')}</span></div><div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"></div></div><div>${rankDeltaHtml(r.prevRank,i+1)}</div><div class="lb-pt">${r.total.toFixed(2)}</div></div>`;
     }).join('');
   }
 
-  const watch = document.getElementById('watchlist');
-  if(sorted.length===0){ watch.innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i>Belum ada data.</div>'; }
-  else {
-    const bottom3 = sorted.slice(-3).reverse();
-    watch.innerHTML = bottom3.map(r=>{
-      const g = calcGrade(r.total);
-      return `<div class="watch-row">
-        <div class="watch-left"><i class="ti ti-alert-triangle"></i><div><div class="watch-name">${escapeHtml(r.name)}</div><div class="watch-store">${escapeHtml(r.store||'')}</div><div class="watch-grade">${g}</div></div></div>
-        <div class="watch-pt">${r.total.toFixed(2)}</div>
-      </div>`;
-    }).join('');
+  const watch=document.getElementById('watchlist');
+  if(!sorted.length)watch.innerHTML='<div class="empty">Belum ada data.</div>';
+  else{
+    const bottom3=sorted.slice(-3).reverse();
+    watch.innerHTML=bottom3.map(r=>{const g=calcGrade(r.total);return `<div class="watch-row"><div class="watch-left"><i class="ti ti-alert-triangle"></i><div><div class="watch-name">${escapeHtml(r.name)}</div><div class="watch-store">${escapeHtml(r.store||'')}</div><div class="watch-grade">${g}</div></div></div><div class="watch-pt">${r.total.toFixed(2)}</div></div>`;}).join('');
   }
 
-  const storeMap = {};
-  withTotals.forEach(r=>{
-    const s = r.store || '(Tanpa Store)';
-    if(!storeMap[s]) storeMap[s] = { count:0, sum:0, Perfect:0, Good:0, ['Need Improve']:0, Bad:0, Poor:0 };
-    storeMap[s].count++; storeMap[s].sum += r.total;
-    storeMap[s][calcGrade(r.total)]++;
-  });
-  const storeRows = Object.keys(storeMap).map(s=>({ store:s, count:storeMap[s].count, avg: storeMap[s].sum/storeMap[s].count, ...storeMap[s] }));
-  storeRows.sort((a,b)=>a.avg-b.avg);
-  const storeTbody = document.getElementById('storeTableBody');
-  if(storeTbody){
-    if(storeRows.length===0){ storeTbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="ti ti-building-store"></i>Belum ada data.</td></tr>'; }
-    else {
-      storeTbody.innerHTML = storeRows.map((s,i)=>`
-        <tr class="${i===0?'store-worst':''}">
-          <td class="name clickable-name" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)">${escapeHtml(s.store)}</td>
-          <td>${s.count}</td>
-          <td><b>${s.avg.toFixed(2)}</b></td>
-          <td>${s.Perfect}</td>
-          <td>${s.Good}</td>
-          <td>${s['Need Improve']}</td>
-          <td>${s.Bad}</td>
-          <td>${s.Poor}</td>
-        </tr>`).join('');
-    }
-  }
+  const storeMap={};
+  activeRows.forEach(r=>{const s=r.store||'(Tanpa Store)';if(!storeMap[s])storeMap[s]={count:0,sum:0,Perfect:0,Good:0,['Need Improve']:0,Bad:0,Poor:0};storeMap[s].count++;storeMap[s].sum+=r.total;storeMap[s][calcGrade(r.total)]++;});
+  const storeRows=Object.keys(storeMap).map(s=>({store:s,count:storeMap[s].count,avg:storeMap[s].sum/storeMap[s].count,...storeMap[s]})).sort((a,b)=>a.avg-b.avg);
+  const storeTbody=document.getElementById('storeTableBody');
+  if(storeTbody)storeTbody.innerHTML=storeRows.length?storeRows.map((s,i)=>`<tr class="${i===0?'store-worst':''}"><td class="name clickable-name" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)">${escapeHtml(s.store)}</td><td>${s.count}</td><td><b>${s.avg.toFixed(2)}</b></td><td>${s.Perfect}</td><td>${s.Good}</td><td>${s['Need Improve']}</td><td>${s.Bad}</td><td>${s.Poor}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Belum ada data.</td></tr>';
 
-  const tbody = document.getElementById('tableBody');
-  const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
+  const tbody=document.getElementById('tableBody');
+  const ranked=sorted.map((r,i)=>({...r,rank:i+1}));
   populateStoreOptions(ranked);
-  const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade) && (!searchName || r.name.toLowerCase().includes(searchName))); 
-  const countEl = document.getElementById('filterCount');
-  if(countEl) countEl.textContent = (filterStore||filterGrade||searchName) ? `Menampilkan ${filtered.length} dari ${n} orang` : '';
-  tbody.innerHTML = filtered.map(r=>{
-    const grade = calcGrade(r.total);
-    const gc = gradeClass(grade);
-    const delta = rankDeltaHtml(r.prevRank, r.rank);
-    if(isAdmin){
-      return `<tr>
-        <td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td>
-        ${fields.map(f=>`<td><input type="number" step="0.1" value="${r[f]}" onchange="updateField(${r.idx},'${f}',this.value)"></td>`).join('')}
-        <td><b>${r.total.toFixed(2)}</b></td>
-        <td><span class="grade ${gc}">${grade}</span></td>
-        <td>${delta}</td>
-        <td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td>
-        <td>
-          <button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat tren"><i class="ti ti-chart-line"></i></button>
-          <button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button>
-        </td>
-      </tr>`;
-    }
-    return `<tr>
-      <td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td>
-      ${fields.map(f=>`<td class="readonly-val">${(parseFloat(r[f])||0).toFixed(2)}</td>`).join('')}
-      <td><b>${r.total.toFixed(2)}</b></td>
-      <td><span class="grade ${gc}">${grade}</span></td>
-      <td>${delta}</td>
-      <td class="readonly-val">${escapeHtml(r.store||'')}</td>
-      <td></td>
-    </tr>`;
+  const filtered=allWithTotals.filter(r=>(!filterStore||r.store===filterStore)&&(!filterGrade||calcGrade(r.total)===filterGrade)&&(!searchName||r.name.toLowerCase().includes(searchName))).sort((a,b)=>{
+    if(isActive(a)!==isActive(b))return isActive(a)?-1:1; return b.total-a.total;
+  });
+  const countEl=document.getElementById('filterCount');if(countEl)countEl.textContent=(filterStore||filterGrade||searchName)?`Menampilkan ${filtered.length} baris`:`${n} ERO aktif · ${allWithTotals.length-n} nonaktif`;
+  tbody.innerHTML=filtered.map(r=>{
+    const grade=calcGrade(r.total),gc=gradeClass(grade),rank=ranked.find(x=>x.name===r.name)?.rank||'-';
+    const active=isActive(r);
+    const progress=Math.min(100,Math.max(0,(r.total/10)*100));
+    const fmtPt=v=>Number(v||0).toFixed(2).replace(/\.00$/,'');
+    const tapCell=`<div class="point-category-grid"><span><b>Device</b> ${fmtPt(r.device)}</span><span><b>ACC</b> ${fmtPt(r.acc)}</span><span><b>Operator</b> ${fmtPt(r.operator)}</span><span><b>Boltech</b> ${fmtPt(r.boltech)}</span><span><b>AR ACC</b> ${fmtPt(r.arAcc)}</span><span><b>AR Boltech</b> ${fmtPt(r.arBoltech)}</span></div>`;
+    if(isAdmin)return `<tr style="${active?'':'opacity:.62;'}"><td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><b>${rank}</b></td><td><button class="status-toggle ${active?'':'danger'}" onclick="toggleEROStatus(${r.idx})">${active?'Aktif':'Nonaktif'}</button></td><td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td><td><button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat detail"><i class="ti ti-chart-line"></i></button><button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button></td></tr>`;
+    return `<tr style="${active?'':'opacity:.62;'}"><td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><b>${rank}</b></td><td>${active?'<span class="active-badge">Aktif</span>':'<span class="inactive-badge">Resign / Nonaktif</span>'}</td><td class="readonly-val">${escapeHtml(r.store||'')}</td><td></td></tr>`;
   }).join('');
-  renderStoreCompareControls();
-  renderYesterdayToday();
-  renderStoreScore(storeRows);
-  renderMoversPanel();
-  renderAlerts(withTotals, sorted);
-  renderMobileLeader(withTotals);
+  renderStoreCompareControls();renderYesterdayToday();renderStoreScore(storeRows);renderMoversPanel();renderAlerts(activeRows,sorted);renderMobileLeader(activeRows);renderMonthlyCompare();
 }
 
+function renderMonthlyCompare(){
+  const sel=document.getElementById('archiveSelect'), kpi=document.getElementById('monthlyKpis'), table=document.getElementById('monthlyCompareTable');
+  if(!sel||!kpi||!table)return;
+  const archives=historyData.filter(h=>archiveMonthFromSnapshot(h)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const currentMonth=new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const currentLabel=document.getElementById('currentMonthLabel');if(currentLabel)currentLabel.textContent=currentMonth;
+  const prevVal=sel.value;
+  sel.innerHTML=archives.length?archives.map((h,i)=>`<option value="${i}">${escapeHtml(monthLabel(archiveMonthFromSnapshot(h)))}</option>`).join(''):'<option value="">Belum ada arsip bulan sebelumnya</option>';
+  if(prevVal && [...sel.options].some(o=>o.value===prevVal))sel.value=prevVal;
+  if(!archives.length){kpi.innerHTML='';table.innerHTML='<div class="empty"><i class="ti ti-archive"></i>Upload data bulan sebelumnya dari menu Kelola Data untuk mulai membandingkan.</div>';return;}
+  const prev=archives[Number(sel.value)||0];
+  const pm={};(prev.rows_snapshot||[]).forEach(r=>pm[r.name]=r);
+  const cur=getRankedRows(rows); const cm={};cur.forEach(r=>cm[r.name]=r);
+  const names=[...new Set([...Object.keys(pm),...Object.keys(cm)])];
+  let pointPrev=0,pointCur=0,common=0,improved=0;
+  names.forEach(n=>{if(pm[n]&&cm[n]){common++;pointPrev+=Number(pm[n].total)||0;pointCur+=Number(cm[n].total)||0;if(cm[n].rank<pm[n].rank)improved++;}});
+  const avgPrev=prev.avg||0,avgCur=cur.length?cur.reduce((s,r)=>s+r.total,0)/cur.length:0;
+  const d=avgCur-avgPrev;
+  kpi.innerHTML=`<div class="compare-kpi"><div class="k">Rata-rata Point</div><div class="v">${avgPrev.toFixed(2)} → ${avgCur.toFixed(2)}</div><div class="${d>=0?'delta-up':'delta-down'}">${d>=0?'▲ +':'▼ '}${Math.abs(d).toFixed(2)}</div></div><div class="compare-kpi"><div class="k">ERO Dibandingkan</div><div class="v">${common}</div><div class="muted">nama yang ada di kedua periode</div></div><div class="compare-kpi"><div class="k">ERO Naik Rank</div><div class="v">${improved}</div><div class="muted">dibanding bulan sebelumnya</div></div><div class="compare-kpi"><div class="k">Perubahan Total Point</div><div class="v">${(pointCur-pointPrev)>=0?'+':''}${(pointCur-pointPrev).toFixed(2)}</div><div class="${pointCur-pointPrev>=0?'delta-up':'delta-down'}">Current vs archive</div></div>`;
+  const sortedNames=names.sort((a,b)=>(cm[b]?.total??-1)-(cm[a]?.total??-1));
+  table.innerHTML=`<table class="compare-table"><thead><tr><th class="name">Nama ERO</th><th>Rank Lalu</th><th>Rank Kini</th><th>Point Lalu</th><th>Point Kini</th><th>Delta</th><th>Grade Kini</th><th>Store Kini</th></tr></thead><tbody>${sortedNames.map(name=>{const p=pm[name],c=cm[name],delta=(c&&p)?c.total-p.total:null;return `<tr><td class="name"><b>${escapeHtml(name)}</b></td><td>${p?('#'+p.rank):'<span class="archive-badge">Baru</span>'}</td><td>${c?('#'+c.rank):'<span class="inactive-badge">Tidak aktif</span>'}</td><td>${p?Number(p.total).toFixed(2):'-'}</td><td>${c?Number(c.total).toFixed(2):'-'}</td><td class="${delta===null?'':delta>0?'delta-up':delta<0?'delta-down':'delta-same'}">${delta===null?'–':(delta>=0?'+':'')+delta.toFixed(2)}</td><td>${c?`<span class="grade ${gradeClass(c.grade||calcGrade(c.total))}">${escapeHtml(c.grade||calcGrade(c.total))}</span>`:'-'}</td><td>${escapeHtml(c?.store||p?.store||'')}</td></tr>`;}).join('')}</tbody></table>`;
+}
 function buildSparkline(values){
   if(values.length < 2) return '';
   const w = 600, h = 60, pad = 6;
@@ -1093,14 +1312,16 @@ function buildSparkline(values){
   </svg>`;
 }
 function exportExcel(){
-  const withTotals = rows.map((r,i)=>({...r, total: calcTotal(r), idx:i}));
+  const withTotals = rows.filter(isActive).map((r,i)=>({...r, total: calcTotal(r), idx:i}));
   const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
   const ranked = sorted.map((r,i)=>({...r, rank:i+1}));
   const filtered = ranked.filter(r=>(!filterStore || r.store===filterStore) && (!filterGrade || calcGrade(r.total)===filterGrade) && (!searchName || r.name.toLowerCase().includes(searchName))); 
   if(filtered.length===0){ alert('Tidak ada data untuk diexport.'); return; }
   const data = filtered.map(r=>({
-    Rank: r.rank, Nama: r.name, Device: r.device, Acc: r.acc, Operator: r.operator,
-    Boltech: r.boltech, ['AR Acc']: r.arAcc, ['AR Boltech']: r.arBoltech,
+    Rank: r.rank, Nama: r.name,
+    ['Target Device']: r.target?.device||0, ['Target Acc']: r.target?.acc||0, ['Target Operator']: r.target?.operator||0, ['Target Boltech']: r.target?.boltech||0, ['Target AR Acc']: r.target?.arAcc||0, ['Target AR Boltech']: r.target?.arBoltech||0,
+    ['Ach Device Qty']: r.ach?.deviceQty||0, ['Ach Device Val']: r.ach?.deviceVal||0, ['Ach Acc Qty']: r.ach?.accQty||0, ['Ach Acc Val']: r.ach?.accVal||0, ['Ach Operator']: r.ach?.operator||0, ['Ach Boltech Qty']: r.ach?.boltechQty||0, ['Ach Boltech Val']: r.ach?.boltechVal||0, ['Ach AR Acc']: r.ach?.arAcc||0, ['Ach AR Boltech']: r.ach?.arBoltech||0,
+    Device: r.device, Acc: r.acc, Operator: r.operator, Boltech: r.boltech, ['AR Acc']: r.arAcc, ['AR Boltech']: r.arBoltech,
     ['Total Point']: Math.round(r.total*100)/100, Grade: calcGrade(r.total), Store: r.store||''
   }));
   const ws = XLSX.utils.json_to_sheet(data);
@@ -1173,8 +1394,8 @@ function openPersonModal(name){
     const labels={device:'Device',acc:'Acc',operator:'Operator',boltech:'Boltech',arAcc:'AR Acc',arBoltech:'AR Boltech'};
     const maxes={device:3,acc:3,operator:1,boltech:1,arAcc:1,arBoltech:1};
     const total=calcTotal(current), grade=calcGrade(total), focus=getFocusRecommendation(current);
-    const rank=[...rows].sort((a,b)=>calcTotal(b)-calcTotal(a)).findIndex(r=>r.name===name)+1;
-    const breakdown=`<div class="modal-breakdown">${fields.map(f=>`<div class="break-row"><span>${labels[f]}</span><div class="break-track"><div class="break-fill" style="width:${Math.min(100,((parseFloat(current[f])||0)/maxes[f])*100)}%"></div></div><b>${(parseFloat(current[f])||0).toFixed(1)}/${maxes[f]}</b></div>`).join('')}</div>`;
+    const rank=getRankedRows(rows).findIndex(r=>r.name===name)+1;
+    const breakdown=`<div class="modal-breakdown">${fields.map(f=>`<div class="break-row"><span>${labels[f]}</span><div class="break-track"><div class="break-fill" style="width:${Math.min(100,((parseFloat(current[f])||0)/maxes[f])*100)}%"></div></div><b>${(parseFloat(current[f])||0).toFixed(1)}/${maxes[f]}</b></div>`).join('')}</div><div class="archive-note"><b>Target:</b> ${escapeHtml(fmtTarget(current.target))}<br><b>Achievement:</b> ${escapeHtml(fmtAchievement(current.ach))}</div>`;
     const kpis=`<div class="modal-kpis"><div class="modal-kpi"><b>${total.toFixed(2)}</b><span>Total</span></div><div class="modal-kpi"><b>#${rank}</b><span>Ranking</span></div><div class="modal-kpi"><b>${grade}</b><span>Grade</span></div></div>`;
     const focusBox=`<div class="focus-box"><b>Rekomendasi fokus utama</b><div>${escapeHtml(focus)}</div></div>`;
     chartEl.innerHTML=kpis+breakdown+focusBox+(points.length>=2?buildLineChartSvg(points.map(p=>p.label),[{name, color:'#CA8A04', values:points.map(p=>p.total)}],{height:200}):'');
@@ -1217,10 +1438,10 @@ let selectedCompareStores = [];
 function renderStoreCompareControls(){
   const controlsEl = document.getElementById('storeCompareControls');
   if(!controlsEl) return;
-  const allStores = [...new Set(rows.map(r=>r.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const allStores = [...new Set(rows.filter(isActive).map(r=>r.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   if(selectedCompareStores.length===0){
     const countByStore = {};
-    rows.forEach(r=>{ if(r.store) countByStore[r.store]=(countByStore[r.store]||0)+1; });
+    rows.filter(isActive).forEach(r=>{ if(r.store) countByStore[r.store]=(countByStore[r.store]||0)+1; });
     selectedCompareStores = allStores.slice().sort((a,b)=>(countByStore[b]||0)-(countByStore[a]||0)).slice(0,3);
   }
   controlsEl.innerHTML = allStores.map(s=>{
@@ -1386,10 +1607,10 @@ function renderHistory(history){
 }
 
 async function loadHistory(){
-  if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
+  if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();return;}
   const {data,error}=await sb.from('rank_history').select('*').order('date',{ascending:false}).limit(100);
-  if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();return;}
-  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();
+  if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();return;}
+  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();
 }
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1421,6 +1642,7 @@ async function bootApp(){
   await loadData();await loadHistory();
   if(SUPABASE_READY)setInterval(async()=>{if(!document.hidden&&!isAdmin)await loadData();},30000);
 }
+document.addEventListener('DOMContentLoaded',()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); const m=document.getElementById('archiveMonth'); if(m)m.value=d.toISOString().slice(0,7); updateUploadModeUI(); });
 (async function initGate(){
   if(!SUPABASE_READY){ unlockView(); bootApp(); return; }
   const {data:{session}} = await sb.auth.getSession();
