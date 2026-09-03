@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Big Malang 2 — Point Dashboard</title>
+<meta name="theme-color" content="#F5B400">
+<meta name="description" content="Big Malang 2 — dashboard poin dan peringkat ERO.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
@@ -62,23 +67,44 @@
   .app-shell { display: flex; gap: 24px; align-items: flex-start; }
 
   .app-sidebar {
-    flex: 0 0 240px; position: sticky; top: 24px; align-self: flex-start;
+    flex: 0 0 240px; position: sticky; top: 24px; align-self: flex-start; height: fit-content;
     background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     border-radius: 24px; padding: 20px 16px;
     box-shadow: var(--shadow-md); border: 1px solid var(--panel-border);
     display: flex; flex-direction: column; gap: 8px;
-    transition: transform 0.3s ease;
+    transition: flex-basis 0.25s ease, padding 0.25s ease, transform 0.3s ease;
   }
+  .app-sidebar.collapsed { flex: 0 0 76px; padding: 20px 10px; }
+  .app-sidebar.collapsed .brand-text,
+  .app-sidebar.collapsed .nav-label { display: none; }
+  .app-sidebar.collapsed .sidebar-brand { justify-content: center; padding: 8px 0 20px; }
+  .app-sidebar.collapsed .nav-item { justify-content: center; padding: 12px 6px; }
   .sidebar-brand {
     display: flex; align-items: center; gap: 12px; padding: 8px 12px 20px;
     font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px;
     color: var(--text-main); border-bottom: 1px solid var(--border-light); margin-bottom: 8px;
+    transition: justify-content 0.2s ease;
   }
-  .sidebar-brand i {
-    color: var(--brand); font-size: 22px; background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+  .sidebar-toggle {
+    display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 6px;
+    padding: 11px 16px; border-radius: 14px; border: 1px dashed var(--border-light);
+    background: transparent; box-shadow: none; color: var(--text-muted);
+    font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .sidebar-toggle:hover { background: rgba(255,255,255,0.8); color: var(--text-main); transform: none; }
+  .app-sidebar.collapsed .sidebar-toggle { justify-content: center; padding: 11px 6px; }
+  @media(max-width: 900px) { .sidebar-toggle { display: none; } .app-sidebar.collapsed { flex-basis: auto; } }
+  .sidebar-brand i, .sidebar-brand .brand-icon {
+    color: var(--brand); background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
     padding: 8px; border-radius: 12px; box-shadow: 0 2px 8px rgba(245, 180, 0, 0.15);
   }
+  .sidebar-brand i { font-size: 22px; }
+  .sidebar-brand .brand-icon { width: 22px; height: 22px; box-sizing: content-box; flex-shrink: 0; }
+  /* Inline SVG nav icons (no external font dependency, always visible) */
+  .nav-icon { width: 18px; height: 18px; flex-shrink: 0; display: inline-block; vertical-align: middle; transition: transform 0.2s; }
+  .nav-item .nav-icon { width: 20px; }
+  .nav-item:hover .nav-icon { transform: scale(1.1); }
   .app-sidebar nav { display: flex; flex-direction: column; gap: 6px; }
   .nav-item {
     display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
@@ -91,6 +117,7 @@
   .nav-item:hover i { transform: scale(1.1); }
   .nav-item.active { background: var(--brand-light); color: #92400E; border-color: rgba(245, 180, 0, 0.2); font-weight: 700; box-shadow: var(--shadow-sm); }
   .nav-item.active i { color: var(--brand); }
+  .nav-item.active .nav-icon { color: var(--brand); }
 
   .app-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 
@@ -118,6 +145,7 @@
     .app-sidebar nav { flex-direction: row; width: 100%; justify-content: space-between; gap: 2px; }
     .nav-item { flex: 1 1 0; min-width: 0; width: auto; flex-direction: column; gap: 3px; padding: 7px 2px; font-size: 9.5px; border-radius: 16px; text-align: center; justify-content: center; white-space: nowrap; }
     .nav-item i { font-size: 18px; width: auto; }
+    .nav-item .nav-icon { width: 18px; height: 18px; }
     .app-content { width: 100%; }
   }
 
@@ -150,12 +178,22 @@
   .dashboard-sidebar .panel { padding: 20px 24px; }
 
   .panel h2 {
-    font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; margin: 0 0 18px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; margin: 0 0 22px;
     color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em;
-    display: flex; align-items: center; gap: 10px; padding-bottom: 15px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    display: flex; align-items: center; gap: 10px; padding: 2px 0 8px;
+    border-bottom: none;
   }
-  .panel h2 i { font-size: 19px; color: var(--brand); background: var(--brand-light); padding: 7px; border-radius: 10px; }
+  .panel h2 i {
+    font-size: 18px; color: var(--brand); background: var(--brand-light);
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 11px; box-shadow: 0 6px 16px rgba(245,180,0,.12);
+    flex: 0 0 34px;
+  }
+  .panel h2::after {
+    content: ''; flex: 1; height: 1px; background: rgba(226,232,240,.45); margin-left: 4px;
+  }
+  .panel h2:has(i.ti-medal)::after { display:none; }
+
 
   /* Top metrics */
   .top-metrics-grid { display: flex; gap: 24px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -239,56 +277,114 @@
   .filter-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
   .filter-count { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: auto; }
 
-  /* Podium */
-  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 16px 0 0; }
-  .podium-card { flex: 1; max-width: 130px; text-align: center; transition: transform 0.3s; }
-  .podium-card:hover { transform: translateY(-4px); }
-  .avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; border: 4px solid #FFF; box-shadow: var(--shadow-md); position: relative; }
-  .rank-badge { position: absolute; top: -5px; right: -5px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-
-  .p1 .avatar { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; } .p1 .rank-badge { background: var(--brand); color: #3B2504; }
-  .p2 .avatar { background: linear-gradient(135deg, #F8FAFC, #E2E8F0); color: #475569; } .p2 .rank-badge { background: #CBD5E1; color: #1E293B; }
-  .p3 .avatar { background: linear-gradient(135deg, #FFEDD5, #FED7AA); color: #9A5B26; } .p3 .rank-badge { background: #D89A6A; color: #3A1F0C; }
-
-  .podium-bar { border-radius: 18px 18px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 14px; margin-top: 8px; }
-  .podium-bar .pt { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; }
-  .b1 { height: 118px; background: linear-gradient(180deg, #FDE68A 0%, #F5B400 100%); color: #3B2504; box-shadow: 0 -8px 20px rgba(245,180,0,0.3); }
-  .b2 { height: 92px; background: linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%); color: #1E293B; box-shadow: 0 -8px 18px rgba(148,163,184,0.15); }
-  .b3 { height: 74px; background: linear-gradient(180deg, #FED7AA 0%, #D89A6A 100%); color: #3A1F0C; box-shadow: 0 -8px 18px rgba(216,154,106,0.15); }
-
-  .podium-name { margin-top: 14px; font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.3; }
-  .podium-store { color: var(--text-muted); font-size: 11px; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .p1 { order: 2; z-index: 2; } .p2 { order: 1; } .p3 { order: 3; }
+  /* Podium — editorial / layered cards */
+  .podium {
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 0; padding: 16px 20px 4px; min-height: 278px; position: relative;
+  }
+  .podium-card {
+    flex: 0 1 180px; width: 180px; min-height: 206px; text-align: center; position: relative;
+    padding: 60px 18px 18px; margin: 0 -12px; border-radius: 24px;
+    background: rgba(255,255,255,.88); border: 1px solid rgba(226,232,240,.85);
+    box-shadow: 0 14px 30px rgba(15,23,42,.06); backdrop-filter: blur(8px);
+    transition: transform .28s ease, box-shadow .28s ease, z-index .2s;
+  }
+  .podium-card:hover { transform: translateY(-8px); box-shadow: 0 22px 38px rgba(15,23,42,.12); z-index: 10; }
+  .podium-card.p1 { min-height: 232px; padding-top: 66px; z-index: 5; }
+  .podium-card.p2 { min-height: 196px; z-index: 3; transform: translateY(12px); }
+  .podium-card.p3 { min-height: 188px; z-index: 2; transform: translateY(18px); }
+  .podium-card.p2:hover, .podium-card.p3:hover { transform: translateY(4px); z-index: 10; }
+  .podium-card.p1::before {
+    content: ''; position: absolute; inset: -18px; border-radius: 32px; z-index: -1;
+    background: radial-gradient(circle at 50% 42%, rgba(245,180,0,.24), rgba(245,180,0,.08) 36%, transparent 68%);
+    filter: blur(10px); pointer-events: none;
+  }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 20px; border: 4px solid #fff; box-shadow: 0 10px 22px rgba(15,23,42,.10);
+    position: absolute; top: -28px; left: 50%; transform: translateX(-50%);
+  }
+  .rank-badge {
+    position: absolute; top: -5px; right: -5px; width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+    font-family: 'JetBrains Mono', monospace; box-shadow: 0 6px 12px rgba(15,23,42,.12);
+  }
+  .p1 .avatar { background: linear-gradient(135deg, #FFF7C2, #FDE68A); color: #92400E; box-shadow: 0 0 0 7px rgba(245,180,0,.10), 0 14px 28px rgba(245,180,0,.22); }
+  .p1 .rank-badge { background: var(--brand); color: #3B2504; }
+  .p2 .avatar { background: linear-gradient(135deg, #FFFFFF, #E8EDF3); color: #475569; } .p2 .rank-badge { background: #CBD5E1; color: #1E293B; }
+  .p3 .avatar { background: linear-gradient(135deg, #FFF4E7, #FED7AA); color: #9A5B26; } .p3 .rank-badge { background: #D89A6A; color: #3A1F0C; }
+  .podium-bar {
+    background: transparent !important; box-shadow: none !important; border-radius: 0;
+    height: auto !important; margin: 0; padding: 0; display: flex; justify-content: center;
+  }
+  .podium-bar .pt { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; }
+  .p1 .podium-bar .pt { color: #A56B00; font-size: 34px; }
+  .podium-name { margin-top: 10px; font-weight: 800; font-size: 13.5px; color: var(--text-main); line-height: 1.3; }
+  .podium-store { color: var(--text-muted); font-size: 10.5px; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+  .podium-medal { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+  .p1 .podium-medal { background: var(--brand-light); color: #92400E; }
+  .p2 .podium-medal { background: #F1F5F9; color: #475569; }
+  .p3 .podium-medal { background: #FFF1E7; color: #9A5B26; }
+  .p1 { order: 2; } .p2 { order: 1; } .p3 { order: 3; }
+  @media(max-width: 560px) {
+    .podium { min-height: 248px; padding: 14px 0 8px; }
+    .podium-card { width: 31%; flex-basis: 31%; margin: 0 -4px; padding-left: 8px; padding-right: 8px; border-radius: 20px; }
+    .podium-card.p1 { min-height: 212px; }
+    .podium-card.p2 { min-height: 182px; }
+    .podium-card.p3 { min-height: 174px; }
+    .avatar { width: 58px; height: 58px; font-size: 17px; top: -22px; }
+    .rank-badge { width: 24px; height: 24px; }
+    .podium-bar .pt, .p1 .podium-bar .pt { font-size: 24px; }
+    .podium-name { font-size: 11.5px; }
+    .podium-store { font-size: 9.5px; }
+  }
 
   /* Leaderboard */
-  #leaderboard { max-height: 460px; overflow-y: auto; padding-right: 10px; }
+  #leaderboard { max-height: 520px; overflow-y: auto; overflow-x: auto; padding-right: 10px; }
   .leaderboard-row {
-    display: grid; grid-template-columns: 30px minmax(0,1.5fr) minmax(60px,1fr) auto 80px; align-items: center; gap: 12px;
-    padding: 10px 10px; border-radius: 14px; transition: background 0.2s; margin-bottom: 2px;
+    display: grid;
+    grid-template-columns: 34px minmax(180px, 1.15fr) minmax(220px, 0.95fr) minmax(330px, 1.65fr) auto 78px;
+    align-items: center; gap: 14px;
+    padding: 12px 10px; border-radius: 16px; transition: background 0.2s, transform 0.2s; margin-bottom: 3px;
   }
-  .leaderboard-row:hover { background: rgba(255,255,255,0.7); }
+  .leaderboard-row:hover { background: rgba(255,255,255,0.78); transform: translateX(2px); }
   .lb-rank { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 13px; text-align: center; font-weight: 700; }
-  .lb-name { font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.3; word-break: break-word; }
-  .lb-name .lb-store, .lb-store { display: block; color: #94A3B8; font-size: 11px; font-weight: 500; margin-top: 2px; }
-  .lb-track { background: #F1F5F9; border-radius: 12px; height: 16px; position: relative; overflow: hidden; min-width: 40px; }
+  .lb-name { font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.35; word-break: break-word; min-width: 0; }
+  .lb-name .lb-store, .lb-store { display: block; color: #94A3B8; font-size: 11px; font-weight: 500; margin-top: 3px; line-height: 1.3; }
+  .lb-progress-wrap { min-width: 0; }
+  .lb-progress-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .lb-progress-label { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+  .lb-track { background: #F1F5F9; border-radius: 12px; height: 12px; position: relative; overflow: hidden; min-width: 80px; }
   .lb-fill { height: 100%; border-radius: 12px; transition: width 0.6s ease-out; }
   .lb-fill.perfect { background: var(--success); }
   .lb-fill.good { background: var(--good); }
   .lb-fill.needimprove { background: var(--warning); }
   .lb-fill.bad { background: var(--bad); }
   .lb-fill.poor { background: var(--danger); }
-  .lb-pt { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; text-align: right; color: var(--text-main); }
+  .lb-grade { flex-shrink: 0; }
+  .lb-categories { min-width: 0; }
+  .lb-categories .point-category-grid { grid-template-columns: repeat(3, minmax(82px, 1fr)); gap: 5px; }
+  .lb-categories .point-category-grid span { padding: 5px 7px; font-size: 10.5px; background: rgba(248,250,252,0.82); }
+  .lb-pt { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 15px; text-align: right; color: var(--text-main); white-space: nowrap; }
 
-  .rank-delta { display: inline-flex; align-items: center; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 20px; white-space: nowrap; }
+  .rank-delta { display: inline-flex; align-items: center; gap: 2px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 20px; white-space: nowrap; }
   .rank-delta i { font-size: 12px; }
   .rank-delta.up { background: #DCFCE7; color: #15803D; }
   .rank-delta.down { background: #FEE2E2; color: #B91C1C; }
   .rank-delta.same { background: #F1F5F9; color: #64748B; }
   .rank-delta.new { background: #EFF6FF; color: #2563EB; }
 
+  @media(max-width: 900px) {
+    #leaderboard { overflow-x: auto; }
+    .leaderboard-row { min-width: 900px; }
+  }
   @media(max-width: 640px) {
-    .leaderboard-row { grid-template-columns: 24px minmax(0,1fr) 58px; column-gap: 8px; }
-    .leaderboard-row .lb-track, .leaderboard-row .rank-delta { display: none; }
+    #leaderboard { padding-right: 4px; }
+    .leaderboard-row { min-width: 860px; grid-template-columns: 26px 180px 190px 315px 74px 70px; gap: 8px; padding: 10px 8px; }
+    .lb-name { font-size: 12px; }
+    .lb-categories .point-category-grid { grid-template-columns: repeat(3, 1fr); }
+    .lb-categories .point-category-grid span { font-size: 9.5px; padding: 4px 5px; }
   }
 
   /* Grade pill */
@@ -335,6 +431,31 @@
   .mobile-kpi .v { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; margin-top: 6px; }
   .focus-box { margin-top: 16px; padding: 14px; border-radius: 14px; background: var(--brand-light); border: 1px solid #FDE68A; }
   .focus-box b { font-size: 13px; color: #92400E; } .focus-box div { font-size: 13px; margin-top: 6px; color: #B45309; line-height: 1.4; }
+
+  /* Dashboard charts (trend + grade distribution) */
+  .chart-grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; }
+  @media(max-width: 900px) { .chart-grid-2 { grid-template-columns: 1fr; } }
+  .chart-subtitle { font-size: 12.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .grade-bar-chart { display: grid; gap: 12px; }
+  .grade-bar-row { display: grid; grid-template-columns: 96px 1fr 28px; align-items: center; gap: 10px; }
+  .grade-bar-label { font-size: 12px; font-weight: 600; color: var(--text-main); }
+  .grade-bar-track { height: 14px; background: #F1F5F9; border-radius: 10px; overflow: hidden; }
+  .grade-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease-out; }
+  .grade-bar-val { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; text-align: right; }
+
+  /* Target vs Achievement progress (person modal) */
+  .target-progress-wrap { margin: 16px 0; padding: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; }
+  .target-progress-title { font-weight: 700; font-size: 13px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+  .target-progress-title i { color: var(--brand); }
+  .target-progress-row { margin-bottom: 10px; }
+  .target-progress-row:last-child { margin-bottom: 0; }
+  .target-progress-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+  .target-progress-track { height: 9px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+  .target-progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease-out; }
+  .target-progress-fill.ontrack { background: var(--success); }
+  .target-progress-fill.warn { background: var(--warning); }
+  .target-progress-fill.behind { background: var(--danger); }
+  .tp-ontrack { color: var(--success); } .tp-warn { color: var(--warning); } .tp-behind { color: var(--danger); }
 
   /* Utils */
   .empty { color: #94A3B8; font-size: 14px; text-align: center; padding: 32px 0; font-weight: 500; }
@@ -526,10 +647,13 @@
   [data-theme="dark"] .modal-kpi,
   [data-theme="dark"] .mobile-kpi,
   [data-theme="dark"] .compare-kpi,
-  [data-theme="dark"] .tool-card {
+  [data-theme="dark"] .tool-card,
+  [data-theme="dark"] .target-progress-wrap {
     background: var(--panel-bg);
     border-color: var(--border-light);
   }
+  [data-theme="dark"] .grade-bar-track,
+  [data-theme="dark"] .target-progress-track { background: #0F172A; }
 
   [data-theme="dark"] h1,
   [data-theme="dark"] .panel h2,
@@ -580,6 +704,122 @@
     color: var(--brand);
     border-color: var(--brand);
   }
+
+  /* ---- Perbaikan tambahan dark-mode: elemen yang sebelumnya pakai warna latar
+     putih/terang hardcode (bukan var), sehingga teks terang jadi tidak terbaca ---- */
+
+  /* Warna aksen dibuat sedikit lebih terang biar tetap kontras di atas panel gelap */
+  [data-theme="dark"] {
+    --success: #34D399;
+    --good: #A3E635;
+    --warning: #FBBF24;
+    --bad: #FB923C;
+    --danger: #F87171;
+    --success-light: rgba(52, 211, 153, 0.14);
+    --good-light: rgba(163, 230, 53, 0.14);
+    --warning-light: rgba(251, 191, 36, 0.14);
+    --bad-light: rgba(251, 146, 60, 0.14);
+    --danger-light: rgba(248, 113, 113, 0.14);
+    --brand-light: rgba(245, 180, 0, 0.14);
+  }
+  /* Pill grade tertentu pakai teks putih di atas bg terang → ganti tinta gelap biar tetap kontras */
+  [data-theme="dark"] .grade.needimprove,
+  [data-theme="dark"] .grade.bad,
+  [data-theme="dark"] .grade.poor { color: #1F1005; }
+
+  /* Kartu podium & area tabel: sebelumnya bg putih hardcode, tidak ikut tema */
+  [data-theme="dark"] .podium-card {
+    background: var(--panel-bg);
+    border-color: var(--border-light);
+    box-shadow: 0 14px 30px rgba(0,0,0,.35);
+  }
+  [data-theme="dark"] .podium-card.p1::before {
+    background: radial-gradient(circle at 50% 42%, rgba(245,180,0,.16), rgba(245,180,0,.05) 36%, transparent 68%);
+  }
+  [data-theme="dark"] .table-scroll {
+    background: var(--panel-bg);
+    box-shadow: inset 0 0 0 1px var(--border-light);
+  }
+  [data-theme="dark"] .leaderboard-row:hover { background: rgba(255,255,255,0.05); }
+  [data-theme="dark"] .store-chip {
+    background: var(--panel-bg);
+    border-color: var(--border-light);
+    color: var(--text-muted);
+  }
+  [data-theme="dark"] .store-chip.active {
+    background: var(--text-main); color: var(--bg-body); border-color: var(--text-main);
+  }
+  [data-theme="dark"] .mode-choice label {
+    background: var(--panel-bg); border-color: var(--border-light); color: var(--text-muted);
+  }
+  [data-theme="dark"] .mode-choice input:checked + label {
+    background: var(--brand-light); border-color: var(--brand); color: var(--brand);
+  }
+  [data-theme="dark"] .modal-close { background: rgba(255,255,255,0.08); color: var(--text-main); }
+  [data-theme="dark"] .modal-close:hover { background: rgba(255,255,255,0.16); }
+
+  /* Track progress/bar yang bg-nya abu terang hardcode */
+  [data-theme="dark"] .lb-track,
+  [data-theme="dark"] .score-bar,
+  [data-theme="dark"] .mini-progress,
+  [data-theme="dark"] .break-track { background: #0F172A; }
+
+  /* Chip kategori poin di leaderboard & tabel perbandingan (bg terang + teks abu gelap hardcode) */
+  [data-theme="dark"] .point-category-grid span {
+    background: rgba(255,255,255,0.05); border-color: var(--border-light);
+  }
+  [data-theme="dark"] .point-category-grid b,
+  [data-theme="dark"] .tap-label { color: var(--text-muted); }
+  [data-theme="dark"] .target-ach-cell b { color: var(--text-main); }
+  [data-theme="dark"] .tap-label.ach-label { color: #60A5FA; }
+  [data-theme="dark"] .tap-label.point-label { color: #C4B5FD; }
+
+  /* Elemen putih polos lain yang belum ikut var(--panel-bg) */
+  [data-theme="dark"] .snap-item { border-bottom-color: var(--border-light); }
+  [data-theme="dark"] .history-scroll { box-shadow: inset 0 0 0 1px var(--border-light); }
+  [data-theme="dark"] .modal-list-item { border-bottom-color: var(--border-light); }
+  [data-theme="dark"] .upload-zone { border-color: var(--border-light); background: rgba(255,255,255,0.02); }
+  [data-theme="dark"] .store-worst td { background: rgba(248,113,113,0.12); }
+  [data-theme="dark"] .mode-badge.view { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  [data-theme="dark"] .mode-badge.admin { border-color: rgba(245,180,0,.35); color: #FCD34D; }
+
+  /* Badge status & alert: teks tinta gelap hardcode diterangkan supaya kebaca di panel gelap */
+  [data-theme="dark"] .watch-name,
+  [data-theme="dark"] .alert-item.critical,
+  [data-theme="dark"] .alert-item.critical div,
+  [data-theme="dark"] .rank-delta.down,
+  [data-theme="dark"] .snap-trend.down,
+  [data-theme="dark"] .delta-down,
+  [data-theme="dark"] .snap-mover-card.drop .mv-delta { color: #FCA5A5 !important; }
+  [data-theme="dark"] .watch-store { color: #FCA5A5; }
+  [data-theme="dark"] .alert-item.warning,
+  [data-theme="dark"] .alert-item.warning div,
+  [data-theme="dark"] .focus-box b { color: #FCD34D !important; }
+  [data-theme="dark"] .focus-box div { color: #FDE68A; }
+  [data-theme="dark"] .alert-item.good,
+  [data-theme="dark"] .alert-item.good div,
+  [data-theme="dark"] .rank-delta.up,
+  [data-theme="dark"] .snap-trend.up,
+  [data-theme="dark"] .delta-up,
+  [data-theme="dark"] .active-badge,
+  [data-theme="dark"] .snap-mover-card.gain .mv-delta { color: #86EFAC !important; }
+  [data-theme="dark"] .rank-delta.new { background: rgba(96,165,250,0.15); color: #93C5FD !important; }
+  [data-theme="dark"] .rank-delta.same,
+  [data-theme="dark"] .snap-trend.same,
+  [data-theme="dark"] .delta-same,
+  [data-theme="dark"] .inactive-badge { color: var(--text-muted) !important; background: rgba(255,255,255,0.06); }
+  [data-theme="dark"] .archive-badge { background: rgba(96,165,250,0.15); color: #93C5FD; }
+  [data-theme="dark"] .archive-note { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,.3); color: #93C5FD; }
+  [data-theme="dark"] .insight-card.gain { border-color: rgba(52,211,153,.3); }
+  [data-theme="dark"] .insight-card.drop { border-color: rgba(248,113,113,.3); }
+  [data-theme="dark"] button.danger { border-color: rgba(248,113,113,.4); }
+  [data-theme="dark"] button.rejoin { border-color: rgba(52,211,153,.4); color: #6EE7B7; }
+
+  /* Tombol ganti tema: ikon inline SVG, tidak lagi bergantung font-icon eksternal */
+  #themeToggle .theme-icon { display: block; }
+  #themeToggle svg#themeIconSun { display: none; }
+  [data-theme="dark"] #themeToggle svg#themeIconMoon { display: none; }
+  [data-theme="dark"] #themeToggle svg#themeIconSun { display: block; }
 </style>
 </head>
 <body class="gated">
@@ -599,16 +839,19 @@
 <div class="app-shell">
 
   <!-- Sidebar Navigation -->
-  <aside class="app-sidebar">
-    <div class="sidebar-brand"><i class="ti ti-trophy"></i><span>Big Malang 2</span></div>
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand"><svg class="nav-icon brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4z"/><path d="M8 5H5a3 3 0 0 0 3 3"/><path d="M16 5h3a3 3 0 0 1-3 3"/><path d="M12 12v3"/><path d="M9 19h6"/><path d="M10 16h4l.5 3h-5z"/></svg><span class="brand-text">Big Malang 2</span></div>
     <nav>
-      <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
-      <button class="nav-item" data-view="eros" onclick="switchView('eros')"><i class="ti ti-users"></i>Data ERO</button>
-      <button class="nav-item" data-view="stores" onclick="switchView('stores')"><i class="ti ti-building-store"></i>Data Toko</button>
-      <button class="nav-item" data-view="reports" onclick="switchView('reports')"><i class="ti ti-report"></i>Report</button>
-      <button class="nav-item" data-view="monthly" onclick="switchView('monthly')"><i class="ti ti-calendar-stats"></i>Perbandingan</button>
-      <button class="nav-item" data-view="settings" id="navSettings" style="display:none;" onclick="switchView('settings')"><i class="ti ti-settings"></i>Kelola Data</button>
+      <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')" title="Dashboard"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg><span class="nav-label">Dashboard</span></button>
+      <button class="nav-item" data-view="eros" onclick="switchView('eros')" title="Data ERO"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.3 20c0-3.3 2.5-5.7 5.7-5.7s5.7 2.4 5.7 5.7"/><circle cx="17.2" cy="8.6" r="2.3"/><path d="M15.7 14.4c2.3.4 4 2.3 4 4.7"/></svg><span class="nav-label">Data ERO</span></button>
+      <button class="nav-item" data-view="stores" onclick="switchView('stores')" title="Data Toko"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5l1.2-4.5h13.6L20 9.5"/><path d="M4.5 9.5V20h15V9.5"/><path d="M9.3 20v-5.3h5.4V20"/><path d="M4 9.5h16"/></svg><span class="nav-label">Data Toko</span></button>
+      <button class="nav-item" data-view="reports" onclick="switchView('reports')" title="Report"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="3" width="13" height="18" rx="1.5"/><line x1="8.5" y1="8" x2="15.5" y2="8"/><line x1="8.5" y1="12" x2="15.5" y2="12"/><line x1="8.5" y1="16" x2="13" y2="16"/></svg><span class="nav-label">Report</span></button>
+      <button class="nav-item" data-view="monthly" onclick="switchView('monthly')" title="Perbandingan"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20.5" x2="20" y2="20.5"/><rect x="6" y="10.5" width="3.6" height="9.5"/><rect x="14.4" y="5.5" width="3.6" height="14.5"/></svg><span class="nav-label">Perbandingan</span></button>
+      <button class="nav-item" data-view="settings" id="navSettings" style="display:none;" onclick="switchView('settings')" title="Kelola Data"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M2.5 12h3M18.5 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg><span class="nav-label">Kelola Data</span></button>
     </nav>
+    <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Ciutkan menu">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6l-6 6 6 6"/><path d="M17 6l-6 6 6 6"/></svg><span class="nav-label">Ciutkan</span>
+    </button>
   </aside>
 
   <div class="app-content">
@@ -622,7 +865,8 @@
     <div class="hero-right">
       <span class="mode-badge" id="modeBadge"></span>
       <button id="themeToggle" onclick="toggleTheme()" title="Ganti Tema" style="border-radius: 50%; padding: 8px 10px;">
-        <i class="ti ti-moon" style="font-size: 18px; margin: 0;"></i>
+        <svg id="themeIconMoon" class="theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="themeIconSun" class="theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       </button>
       <button id="adminBtn" onclick="toggleAdmin()"><i class="ti ti-lock"></i><span id="adminBtnLabel">Login Admin</span></button>
     </div>
@@ -681,6 +925,11 @@
       <div class="panel dashboard-grid-full">
         <h2><i class="ti ti-arrows-up-down"></i>Most Improved &amp; Biggest Drop</h2>
         <div id="moversPanel" class="insight-grid"></div>
+      </div>
+
+      <div class="panel dashboard-grid-full">
+        <h2><i class="ti ti-chart-line"></i>Tren &amp; Distribusi Grade</h2>
+        <div id="dashboardCharts"></div>
       </div>
 
       <div class="panel dashboard-grid-full">
@@ -887,9 +1136,13 @@ function toggleTheme() {
   updateThemeIcon(newTheme);
 }
 function updateThemeIcon(theme) {
-  const themeIcon = document.querySelector('#themeToggle i');
-  if (themeIcon) {
-    themeIcon.className = theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  // Pakai SVG inline (bukan font-icon eksternal) supaya ikon tombol tema
+  // selalu tampil walau font ikon gagal/lambat dimuat.
+  const moonIcon = document.getElementById('themeIconMoon');
+  const sunIcon = document.getElementById('themeIconSun');
+  if (moonIcon && sunIcon) {
+    moonIcon.style.display = theme === 'dark' ? 'none' : 'block';
+    sunIcon.style.display = theme === 'dark' ? 'block' : 'none';
   }
 }
 (function initTheme(){
@@ -1227,7 +1480,8 @@ function render(){
   if(!sorted.length)podium.innerHTML='<div class="empty"><i class="ti ti-trophy"></i>Belum ada data aktif.</div>';
   else{
     const top3=sorted.slice(0,3),cls=['p1','p2','p3'],bar=['b1','b2','b3'],rankNum=[1,2,3];
-    podium.innerHTML=top3.map((r,i)=>`<div class="podium-card ${cls[i]}"><div class="avatar">${initials(r.name)}<div class="rank-badge">${rankNum[i]}</div></div><div class="podium-bar ${bar[i]}"><div class="pt">${r.total.toFixed(2)}</div></div><div class="podium-name">${escapeHtml(r.name)}</div><div class="podium-store">${escapeHtml(r.store||'')}</div></div>`).join('');
+    const medal=['Champion','Runner Up','Third Place'];
+    podium.innerHTML=top3.map((r,i)=>`<div class="podium-card ${cls[i]}"><div class="avatar">${initials(r.name)}<div class="rank-badge">${rankNum[i]}</div></div><div class="podium-bar ${bar[i]}"><div class="pt">${r.total.toFixed(2)}</div></div><div class="podium-medal"><i class="ti ti-medal"></i>${medal[i]}</div><div class="podium-name">${escapeHtml(r.name)}</div><div class="podium-store">${escapeHtml(r.store||'')}</div></div>`).join('');
   }
 
   const lb=document.getElementById('leaderboard');
@@ -1236,7 +1490,9 @@ function render(){
     const maxPt=Math.max(...sorted.map(r=>r.total),8);
     lb.innerHTML=sorted.map((r,i)=>{
       const gc=gradeClass(calcGrade(r.total)),pct=Math.max(4,(r.total/maxPt)*100);
-      return `<div class="leaderboard-row"><div class="lb-rank">${i+1}</div><div class="lb-name clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}<span class="lb-store">${escapeHtml(r.store||'')}</span></div><div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"></div></div><div>${rankDeltaHtml(r.prevRank,i+1)}</div><div class="lb-pt">${r.total.toFixed(2)}</div></div>`;
+      const fmtLbPt=v=>Number(v||0).toFixed(2).replace(/\.00$/,'');
+      const pointGrid=`<div class="point-category-grid"><span><b>Device</b> ${fmtLbPt(r.device)}</span><span><b>ACC</b> ${fmtLbPt(r.acc)}</span><span><b>Operator</b> ${fmtLbPt(r.operator)}</span><span><b>Boltech</b> ${fmtLbPt(r.boltech)}</span><span><b>AR ACC</b> ${fmtLbPt(r.arAcc)}</span><span><b>AR Boltech</b> ${fmtLbPt(r.arBoltech)}</span></div>`;
+      return `<div class="leaderboard-row"><div class="lb-rank">${i+1}</div><div class="lb-name clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}<span class="lb-store">${escapeHtml(r.store||'')}</span></div><div class="lb-progress-wrap"><div class="lb-progress-head"><span class="lb-progress-label">Progress</span><span class="lb-grade grade ${gc}">${escapeHtml(calcGrade(r.total))}</span></div><div class="lb-track"><div class="lb-fill ${gc}" style="width:${pct}%"></div></div></div><div class="lb-categories">${pointGrid}</div><div>${rankDeltaHtml(r.prevRank,i+1)}</div><div class="lb-pt">${r.total.toFixed(2)}</div></div>`;
     }).join('');
   }
 
@@ -1269,7 +1525,7 @@ function render(){
     if(isAdmin)return `<tr style="${active?'':'opacity:.62;'}"><td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><b>${rank}</b></td><td><button class="status-toggle ${active?'':'danger'}" onclick="toggleEROStatus(${r.idx})">${active?'Aktif':'Nonaktif'}</button></td><td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td><td><button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat detail"><i class="ti ti-chart-line"></i></button><button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button></td></tr>`;
     return `<tr style="${active?'':'opacity:.62;'}"><td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><b>${rank}</b></td><td>${active?'<span class="active-badge">Aktif</span>':'<span class="inactive-badge">Resign / Nonaktif</span>'}</td><td class="readonly-val">${escapeHtml(r.store||'')}</td><td></td></tr>`;
   }).join('');
-  renderStoreCompareControls();renderYesterdayToday();renderStoreScore(storeRows);renderMoversPanel();renderAlerts(activeRows,sorted);renderMobileLeader(activeRows);renderMonthlyCompare();
+  renderStoreCompareControls();renderYesterdayToday();renderStoreScore(storeRows);renderMoversPanel();renderAlerts(activeRows,sorted);renderMobileLeader(activeRows);renderMonthlyCompare();renderDashboardCharts(activeRows);
 }
 
 function renderMonthlyCompare(){
@@ -1311,6 +1567,73 @@ function buildSparkline(values){
     ${pts.map((p,i)=>`<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="${i===pts.length-1?4:2.5}" fill="${last}"/>`).join('')}
   </svg>`;
 }
+
+const GRADE_ORDER = ['Perfect','Good','Need Improve','Bad','Poor'];
+const GRADE_COLORS = {Perfect:'#059669',Good:'#65A30D','Need Improve':'#D97706',Bad:'#EA580C',Poor:'#DC2626'};
+function renderDashboardCharts(activeRows){
+  const el = document.getElementById('dashboardCharts');
+  if(!el) return;
+  const chrono = [...historyData].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const trendHtml = chrono.length>=2
+    ? buildLineChartSvg(chrono.map(h=>h.label), [{name:'Rata-rata Poin', color:'#F5B400', values: chrono.map(h=>h.avg)}], {height:210})
+    : '<div class="empty"><i class="ti ti-chart-line"></i>Belum cukup snapshot untuk menampilkan tren. Simpan snapshot harian untuk mulai melacak.</div>';
+  const counts = {}; GRADE_ORDER.forEach(g=>counts[g]=0);
+  (activeRows||[]).forEach(r=>{ const g=calcGrade(r.total); if(counts[g]!==undefined) counts[g]++; });
+  const maxCount = Math.max(1, ...GRADE_ORDER.map(g=>counts[g]));
+  const gradeBarsHtml = `<div class="grade-bar-chart">${GRADE_ORDER.map(g=>`
+    <div class="grade-bar-row">
+      <span class="grade-bar-label">${g}</span>
+      <div class="grade-bar-track"><div class="grade-bar-fill" style="width:${(counts[g]/maxCount)*100}%;background:${GRADE_COLORS[g]}"></div></div>
+      <span class="grade-bar-val" style="color:${GRADE_COLORS[g]}">${counts[g]}</span>
+    </div>`).join('')}</div>`;
+  el.innerHTML = `<div class="chart-grid-2">
+    <div><div class="chart-subtitle">Tren Rata-rata Poin (semua snapshot)</div>${trendHtml}</div>
+    <div><div class="chart-subtitle">Distribusi Grade ERO Aktif</div>${gradeBarsHtml}</div>
+  </div>`;
+}
+
+function buildTargetProgressHtml(r){
+  const labels={device:'Device',acc:'Acc',operator:'Operator',boltech:'Boltech',arAcc:'AR Acc',arBoltech:'AR Boltech'};
+  const est = r.est||{};
+  const rowsHtml = fields.map(f=>{
+    const ratio = parseFloat(est[f]);
+    const hasVal = !isNaN(ratio) && isFinite(ratio);
+    const pct = hasVal ? ratio*100 : 0;
+    const clamped = Math.max(0, Math.min(100, pct));
+    const cls = pct>=100 ? 'ontrack' : pct>=80 ? 'warn' : 'behind';
+    return `<div class="target-progress-row">
+      <div class="target-progress-head"><span>${labels[f]}</span><b class="tp-${cls}">${hasVal?pct.toFixed(0)+'%':'-'}</b></div>
+      <div class="target-progress-track"><div class="target-progress-fill ${cls}" style="width:${clamped}%"></div></div>
+    </div>`;
+  }).join('');
+  return `<div class="target-progress-wrap"><div class="target-progress-title"><i class="ti ti-target-arrow"></i>Target vs Pencapaian (% dari target)</div>${rowsHtml}</div>`;
+}
+
+function toggleSidebar(){
+  const sidebar = document.getElementById('appSidebar');
+  if(!sidebar) return;
+  const collapsed = sidebar.classList.toggle('collapsed');
+  localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+  updateSidebarToggleUI(collapsed);
+}
+function updateSidebarToggleUI(collapsed){
+  const btn = document.getElementById('sidebarToggleBtn');
+  if(!btn) return;
+  const svgLeft = '<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6l-6 6 6 6"/><path d="M17 6l-6 6 6 6"/></svg>';
+  const svgRight = '<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l6 6-6 6"/><path d="M7 6l6 6-6 6"/></svg>';
+  btn.innerHTML = collapsed
+    ? svgRight+'<span class="nav-label">Perluas</span>'
+    : svgLeft+'<span class="nav-label">Ciutkan</span>';
+  btn.title = collapsed ? 'Perluas menu' : 'Ciutkan menu';
+}
+(function initSidebarState(){
+  const collapsed = localStorage.getItem('sidebarCollapsed') === '1';
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const sidebar = document.getElementById('appSidebar');
+    if(sidebar && collapsed) sidebar.classList.add('collapsed');
+    updateSidebarToggleUI(collapsed);
+  });
+})();
 function exportExcel(){
   const withTotals = rows.filter(isActive).map((r,i)=>({...r, total: calcTotal(r), idx:i}));
   const sorted = [...withTotals].sort((a,b)=>b.total-a.total);
@@ -1398,7 +1721,8 @@ function openPersonModal(name){
     const breakdown=`<div class="modal-breakdown">${fields.map(f=>`<div class="break-row"><span>${labels[f]}</span><div class="break-track"><div class="break-fill" style="width:${Math.min(100,((parseFloat(current[f])||0)/maxes[f])*100)}%"></div></div><b>${(parseFloat(current[f])||0).toFixed(1)}/${maxes[f]}</b></div>`).join('')}</div><div class="archive-note"><b>Target:</b> ${escapeHtml(fmtTarget(current.target))}<br><b>Achievement:</b> ${escapeHtml(fmtAchievement(current.ach))}</div>`;
     const kpis=`<div class="modal-kpis"><div class="modal-kpi"><b>${total.toFixed(2)}</b><span>Total</span></div><div class="modal-kpi"><b>#${rank}</b><span>Ranking</span></div><div class="modal-kpi"><b>${grade}</b><span>Grade</span></div></div>`;
     const focusBox=`<div class="focus-box"><b>Rekomendasi fokus utama</b><div>${escapeHtml(focus)}</div></div>`;
-    chartEl.innerHTML=kpis+breakdown+focusBox+(points.length>=2?buildLineChartSvg(points.map(p=>p.label),[{name, color:'#CA8A04', values:points.map(p=>p.total)}],{height:200}):'');
+    const targetProgress=buildTargetProgressHtml(current);
+    chartEl.innerHTML=kpis+breakdown+targetProgress+focusBox+(points.length>=2?buildLineChartSvg(points.map(p=>p.label),[{name, color:'#CA8A04', values:points.map(p=>p.total)}],{height:200}):'');
   } else chartEl.innerHTML='';
   if(points.length===0) listEl.innerHTML='<div class="empty"><i class="ti ti-chart-line"></i>Belum ada data histori untuk orang ini.</div>';
   else listEl.innerHTML=[...points].reverse().map(p=>`<div class="modal-list-item"><span>${escapeHtml(p.label)}</span><span><b>${p.total.toFixed(2)}</b> · ${p.grade}</span></div>`).join('');
@@ -1607,10 +1931,10 @@ function renderHistory(history){
 }
 
 async function loadHistory(){
-  if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();return;}
+  if(!SUPABASE_READY){historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();renderDashboardCharts(lastWithTotals.filter(isActive));return;}
   const {data,error}=await sb.from('rank_history').select('*').order('date',{ascending:false}).limit(100);
-  if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();return;}
-  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();
+  if(error){console.error(error);historyData=[];filteredHistoryData=[];renderHistory([]);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();renderDashboardCharts(lastWithTotals.filter(isActive));return;}
+  historyData=data||[];filteredHistoryData=getFilteredHistory();renderHistory(filteredHistoryData);renderStoreCompareControls();renderYesterdayToday();renderMoversPanel();renderMonthlyCompare();renderDashboardCharts(lastWithTotals.filter(isActive));
 }
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1648,6 +1972,15 @@ document.addEventListener('DOMContentLoaded',()=>{ const d=new Date(); d.setMont
   const {data:{session}} = await sb.auth.getSession();
   if(session){ currentUser = session.user; isAdmin = isAdminFromUser(currentUser); unlockView(); bootApp(); }
 })();
+
+// =========================================
+// PWA: registrasi service worker (mode offline & installable)
+// =========================================
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>console.warn('Registrasi service worker gagal:', err));
+  });
+}
 </script>
 </body>
 </html>
