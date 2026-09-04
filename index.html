@@ -62,6 +62,11 @@
   ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
   .wrap { max-width: 1600px; width: 100%; margin: 0 auto; }
+  /* Safety net: nothing (wide tables, charts, grid children) should ever be able to
+     force the whole page wider than the viewport on mobile — that is what causes the
+     browser to auto zoom-out the entire page, making the Dashboard look tiny/unreadable
+     compared to other pages. */
+  html, body { overflow-x: hidden; }
 
   /* App shell */
   .app-shell { display: flex; gap: 24px; align-items: flex-start; }
@@ -126,6 +131,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
   .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; }
+  .dashboard-grid > * { min-width: 0; }
   .dashboard-grid-full { grid-column: 1 / -1; }
   @media(max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
@@ -173,6 +179,12 @@
     border-radius: 24px; padding: 24px;
     box-shadow: var(--shadow-sm); border: 1px solid var(--panel-border);
     transition: box-shadow 0.3s ease;
+    /* Grid/flex items default to min-width:auto, which means a wide child (e.g. the
+       860px-wide leaderboard rows) can force this panel — and the whole page — wider
+       than the screen. min-width:0 lets the panel shrink to the track/column width so
+       any overflow stays contained inside its own scroll area instead of blowing up
+       the layout (this was the cause of the Dashboard page looking "zoomed out"). */
+    min-width: 0;
   }
   .panel:hover { box-shadow: var(--shadow-md); }
   .dashboard-sidebar .panel { padding: 20px 24px; }
@@ -197,8 +209,9 @@
 
   /* Top metrics */
   .top-metrics-grid { display: flex; gap: 24px; margin-bottom: 12px; flex-wrap: wrap; }
-  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 0 0 350px; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 0 0 350px; min-width: 0; }
   .grade-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; flex: 1; min-width: 300px; }
+  @media(max-width: 560px) { .grade-stats { min-width: 0; } }
 
   .stat-card {
     background: rgba(255,255,255,0.85); border-radius: 18px; padding: 18px 20px;
@@ -341,7 +354,7 @@
   }
 
   /* Leaderboard */
-  #leaderboard { max-height: 520px; overflow-y: auto; overflow-x: auto; padding-right: 10px; }
+  #leaderboard { max-height: 520px; overflow-y: auto; overflow-x: auto; padding-right: 10px; min-width: 0; }
   .leaderboard-row {
     display: grid;
     grid-template-columns: 34px minmax(180px, 1.15fr) minmax(220px, 0.95fr) minmax(330px, 1.65fr) auto 78px;
@@ -375,16 +388,35 @@
   .rank-delta.same { background: #F1F5F9; color: #64748B; }
   .rank-delta.new { background: #EFF6FF; color: #2563EB; }
 
-  @media(max-width: 900px) {
+  @media(max-width: 900px) and (min-width: 761px) {
     #leaderboard { overflow-x: auto; }
     .leaderboard-row { min-width: 900px; }
   }
-  @media(max-width: 640px) {
-    #leaderboard { padding-right: 4px; }
-    .leaderboard-row { min-width: 860px; grid-template-columns: 26px 180px 190px 315px 74px 70px; gap: 8px; padding: 10px 8px; }
-    .lb-name { font-size: 12px; }
+  /* Below 760px: stop relying on a wide horizontally-scrolling row (which is what made
+     the Dashboard unreadable on phones) and switch the leaderboard to stacked cards,
+     the same "one full-width card per row" pattern already used on the other pages,
+     with the ERO name + rank shown together up top. */
+  @media(max-width: 760px) {
+    #leaderboard { overflow-x: hidden; padding-right: 0; }
+    .leaderboard-row {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+      min-width: 0; width: 100%;
+      border: 1px solid var(--panel-border); border-radius: 16px;
+      padding: 12px 14px; margin-bottom: 10px; background: rgba(255,255,255,0.55);
+    }
+    .leaderboard-row:hover { transform: none; }
+    .lb-rank {
+      order: 1; flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+      background: #F1F5F9; display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px;
+    }
+    .lb-name { order: 2; flex: 1 1 auto; min-width: 0; font-size: 13.5px; }
+    .lb-pt { order: 3; flex: 0 0 auto; font-size: 16px; }
+    .leaderboard-row > div:nth-child(5) { order: 4; flex: 0 0 auto; }
+    .lb-progress-wrap { order: 5; flex: 1 1 100%; min-width: 0; }
+    .lb-categories { order: 6; flex: 1 1 100%; min-width: 0; }
     .lb-categories .point-category-grid { grid-template-columns: repeat(3, 1fr); }
-    .lb-categories .point-category-grid span { font-size: 9.5px; padding: 4px 5px; }
+    .lb-categories .point-category-grid span { font-size: 10px; padding: 4px 6px; }
   }
 
   /* Grade pill */
@@ -569,6 +601,48 @@
   .mini-progress span { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
   .status-toggle { padding: 5px 10px; font-size: 10.5px; border-radius: 10px; }
   .archive-note { padding: 12px 14px; border-radius: 14px; background: #EFF6FF; border: 1px solid #BFDBFE; color: #1D4ED8; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+
+  /* Data ERO & Data Toko tables -> stacked cards on mobile, with Nama + Rank
+     prioritized together in the card header instead of being squeezed into tiny
+     table columns (the name input shrinking down to a single letter, and Rank
+     scrolling off-screen, is the bug this fixes). */
+  @media(max-width: 760px) {
+    #dataTable, #storeTable { width: 100%; }
+    #dataTable thead, #storeTable thead { display: none; }
+    #dataTable tbody, #storeTable tbody { display: block; }
+    #dataTable tr, #storeTable tr {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+      width: 100%; padding: 14px; margin-bottom: 10px;
+      border: 1px solid #E2E8F0; border-radius: 16px; background: rgba(255,255,255,0.7);
+    }
+    #dataTable td, #storeTable td { display: block; padding: 0; border: none; text-align: left; }
+
+    /* Data ERO card: Nama (grows) + Rank badge share the top line */
+    #dataTable td.name { order: 1; flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 800; }
+    #dataTable td.name input { font-size: 15px; font-weight: 800; min-width: 0; }
+    #dataTable td.rank-cell { order: 2; flex: 0 0 auto; }
+    #dataTable td.rank-cell b {
+      display: inline-block; padding: 4px 11px; border-radius: 999px; font-size: 13px;
+      background: var(--brand-light); color: #92400E;
+    }
+    #dataTable td:has(.grade) { order: 3; flex: 0 0 auto; }
+    #dataTable td:has(.status-toggle), #dataTable td:has(.active-badge), #dataTable td:has(.inactive-badge) { order: 4; flex: 0 0 auto; }
+    #dataTable td[data-label="Store"] { order: 5; flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--text-muted); }
+    #dataTable td[data-label="Store"]::before { content: 'Store: '; }
+    #dataTable td[data-label="Store"] input { font-size: 12px; min-width: 0; }
+    #dataTable td:has(.mini-progress) { order: 6; flex: 1 1 100%; }
+    #dataTable td.target-ach-cell { order: 7; flex: 1 1 100%; min-width: 0; max-width: none; margin-top: 2px; }
+    #dataTable td:has(.rm) { order: 8; flex: 1 1 100%; display: flex !important; justify-content: flex-end; gap: 6px; }
+
+    /* Data Toko card: Store name + rata-rata share the top line, counts follow as chips */
+    #storeTable td.name { order: 1; flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 800; }
+    #storeTable td[data-label="Rata-rata"] { order: 2; flex: 0 0 auto; font-size: 16px; font-weight: 800; }
+    #storeTable td[data-label]:not([data-label="Rata-rata"]) {
+      order: 3; flex: 0 0 auto; font-size: 11px; padding: 3px 8px !important;
+      border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; color: #475569;
+    }
+    #storeTable td[data-label]::before { content: attr(data-label) ': '; font-weight: 700; color: #64748B; }
+  }
 
   /* Responsive breakpoints */
   @media(max-width: 1280px) {
@@ -1034,7 +1108,7 @@
           <table id="dataTable">
             <thead>
               <tr>
-                <th class="name">Nama</th><th>Point per Category</th><th>Grade</th><th>Progres</th><th>Rank</th><th>Status</th><th>Store</th><th></th>
+                <th class="name">Nama</th><th>Rank</th><th>Point per Category</th><th>Grade</th><th>Progres</th><th>Status</th><th>Store</th><th></th>
               </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -1507,7 +1581,7 @@ function render(){
   activeRows.forEach(r=>{const s=r.store||'(Tanpa Store)';if(!storeMap[s])storeMap[s]={count:0,sum:0,Perfect:0,Good:0,['Need Improve']:0,Bad:0,Poor:0};storeMap[s].count++;storeMap[s].sum+=r.total;storeMap[s][calcGrade(r.total)]++;});
   const storeRows=Object.keys(storeMap).map(s=>({store:s,count:storeMap[s].count,avg:storeMap[s].sum/storeMap[s].count,...storeMap[s]})).sort((a,b)=>a.avg-b.avg);
   const storeTbody=document.getElementById('storeTableBody');
-  if(storeTbody)storeTbody.innerHTML=storeRows.length?storeRows.map((s,i)=>`<tr class="${i===0?'store-worst':''}"><td class="name clickable-name" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)">${escapeHtml(s.store)}</td><td>${s.count}</td><td><b>${s.avg.toFixed(2)}</b></td><td>${s.Perfect}</td><td>${s.Good}</td><td>${s['Need Improve']}</td><td>${s.Bad}</td><td>${s.Poor}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Belum ada data.</td></tr>';
+  if(storeTbody)storeTbody.innerHTML=storeRows.length?storeRows.map((s,i)=>`<tr class="${i===0?'store-worst':''}"><td class="name clickable-name" data-store="${escapeAttr(s.store)}" onclick="openStoreModal(this.dataset.store)">${escapeHtml(s.store)}</td><td data-label="ERO">${s.count}</td><td data-label="Rata-rata"><b>${s.avg.toFixed(2)}</b></td><td data-label="Perfect">${s.Perfect}</td><td data-label="Good">${s.Good}</td><td data-label="Need Improve">${s['Need Improve']}</td><td data-label="Bad">${s.Bad}</td><td data-label="Poor">${s.Poor}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Belum ada data.</td></tr>';
 
   const tbody=document.getElementById('tableBody');
   const ranked=sorted.map((r,i)=>({...r,rank:i+1}));
@@ -1522,8 +1596,8 @@ function render(){
     const progress=Math.min(100,Math.max(0,(r.total/10)*100));
     const fmtPt=v=>Number(v||0).toFixed(2).replace(/\.00$/,'');
     const tapCell=`<div class="point-category-grid"><span><b>Device</b> ${fmtPt(r.device)}</span><span><b>ACC</b> ${fmtPt(r.acc)}</span><span><b>Operator</b> ${fmtPt(r.operator)}</span><span><b>Boltech</b> ${fmtPt(r.boltech)}</span><span><b>AR ACC</b> ${fmtPt(r.arAcc)}</span><span><b>AR Boltech</b> ${fmtPt(r.arBoltech)}</span></div>`;
-    if(isAdmin)return `<tr style="${active?'':'opacity:.62;'}"><td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><b>${rank}</b></td><td><button class="status-toggle ${active?'':'danger'}" onclick="toggleEROStatus(${r.idx})">${active?'Aktif':'Nonaktif'}</button></td><td class="store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td><td><button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat detail"><i class="ti ti-chart-line"></i></button><button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button></td></tr>`;
-    return `<tr style="${active?'':'opacity:.62;'}"><td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><b>${rank}</b></td><td>${active?'<span class="active-badge">Aktif</span>':'<span class="inactive-badge">Resign / Nonaktif</span>'}</td><td class="readonly-val">${escapeHtml(r.store||'')}</td><td></td></tr>`;
+    if(isAdmin)return `<tr style="${active?'':'opacity:.62;'}"><td class="name"><input value="${escapeAttr(r.name)}" onchange="updateField(${r.idx},'name',this.value)"></td><td class="rank-cell" data-label="Rank"><b>#${rank}</b></td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td><button class="status-toggle ${active?'':'danger'}" onclick="toggleEROStatus(${r.idx})">${active?'Aktif':'Nonaktif'}</button></td><td class="store" data-label="Store"><input value="${escapeAttr(r.store||'')}" onchange="updateField(${r.idx},'store',this.value)"></td><td><button class="rm" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)" title="Lihat detail"><i class="ti ti-chart-line"></i></button><button class="rm" onclick="removeRow(${r.idx})"><i class="ti ti-x"></i></button></td></tr>`;
+    return `<tr style="${active?'':'opacity:.62;'}"><td class="name readonly-val clickable-name" data-name="${escapeAttr(r.name)}" onclick="openPersonModal(this.dataset.name)">${escapeHtml(r.name)}</td><td class="rank-cell" data-label="Rank"><b>#${rank}</b></td><td class="target-ach-cell">${tapCell}</td><td><span class="grade ${gc}">${grade}</span></td><td><div class="mini-progress"><span style="width:${progress}%"></span></div></td><td>${active?'<span class="active-badge">Aktif</span>':'<span class="inactive-badge">Resign / Nonaktif</span>'}</td><td class="readonly-val" data-label="Store">${escapeHtml(r.store||'')}</td><td></td></tr>`;
   }).join('');
   renderStoreCompareControls();renderYesterdayToday();renderStoreScore(storeRows);renderMoversPanel();renderAlerts(activeRows,sorted);renderMobileLeader(activeRows);renderMonthlyCompare();renderDashboardCharts(activeRows);
 }
